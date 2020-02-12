@@ -4,7 +4,7 @@
 #include <Core.h>
 
 class FaceDb {
-  public:
+public:
     FaceDb(const std::string data_dir, const bool preview);
 
     void videoRegister(const int identifier,
@@ -20,11 +20,11 @@ class FaceDb {
 private:
     std::string registeredIds() const;
     void showResult(const affdex::vision::FaceRegistrationResult result) const;
-    affdex::vision::FaceRegistrationResult processFrame(const cv::Mat &frame, const int identifier);
+    affdex::vision::FaceRegistrationResult processFrame(const cv::Mat& frame, const int identifier);
 
     affdex::path data_dir_;
     mutable std::unique_ptr<affdex::vision::FaceRegistrar> face_registrar_;
-    affdex::vision::FaceRegistrar &faceRegistrar() const;
+    affdex::vision::FaceRegistrar& faceRegistrar() const;
 
     static void interrupt(int sig);
     static bool exitLoop_;

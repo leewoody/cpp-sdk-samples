@@ -6,14 +6,14 @@
 class FaceDb;
 
 class Application {
-  public:
-    Application(int argsc, char **argsv);
+public:
+    Application(int argsc, char** argsv);
     ~Application();
 
     void run();
 
-  private:
-    void setCommonOptions(const std::string &usage);
+private:
+    void setCommonOptions(const std::string& usage);
     bool parse(const int required_param_count);
 
     SubCommandParser command_line_;

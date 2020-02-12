@@ -6,8 +6,7 @@
 
 /** @brief Plot the face metrics using opencv highgui
  */
-class Visualizer
-{
+class Visualizer {
 public:
 
     Visualizer();
@@ -27,7 +26,7 @@ public:
     * @param bottom_right  -- The bottom right point
     * @param valence       -- The valence value
     */
-    void drawBoundingBox(std::vector<affdex::vision::Point>bounding_box, float valence);
+    void drawBoundingBox(std::vector<affdex::vision::Point> bounding_box, float valence);
 
     /** @brief DrawHeadOrientation Displays head orientation and associated value
     * @param name        -- Name of the classifier
@@ -37,16 +36,17 @@ public:
     * @param align_right -- Whether to right or left justify the text
     * @param color       -- Color
     */
-    void drawHeadOrientation(std::map<affdex::vision::Measurement, float> headAngles, const int x, int &padding,
-                             bool align_right=true, cv::Scalar color=cv::Scalar(255,255,255));
-
+    void drawHeadOrientation(std::map<affdex::vision::Measurement, float> headAngles, const int x, int& padding,
+                             bool align_right = true, cv::Scalar color = cv::Scalar(255, 255, 255));
 
     /** @brief DrawFaceMetrics Displays all facial metrics and associated value
     * @param face         -- The affdex::Face object to display
     * @param bounding_box -- The bounding box coordinates
     * @param draw_face_id -- Whether to draw the face id
     */
-    void drawFaceMetrics(affdex::vision::Face face, std::vector<affdex::vision::Point> bounding_box, bool draw_face_id = false);
+    void drawFaceMetrics(affdex::vision::Face face,
+                         std::vector<affdex::vision::Point> bounding_box,
+                         bool draw_face_id = false);
 
     /** @brief ShowImage displays image on screen
     */
@@ -68,7 +68,7 @@ private:
     * @param background - background image
     * @param location   - location on the background image where the foreground image should be placed
     */
-    void overlayImage(const cv::Mat &foreground, cv::Mat &background, cv::Point2i location);
+    void overlayImage(const cv::Mat& foreground, cv::Mat& background, cv::Point2i location);
 
     /** @brief DrawClassifierOutput Displays a classifier and associated value
     * @param name        -- Name of the classifier
@@ -77,7 +77,7 @@ private:
     * @param align_right -- Whether to right or left justify the text
     */
     void drawClassifierOutput(const std::string& classifier, const float value,
-                              const cv::Point2f& loc, bool align_right=false );
+                              const cv::Point2f& loc, bool align_right = false);
 
     /** @brief DrawEqualizer displays an equalizer on screen either right or left justified at the anchor location (loc)
     * @param name        -- Name of the classifier
@@ -97,8 +97,8 @@ private:
     * @param color       -- Color
     */
     void drawText(const std::string& name, const std::string& value,
-                  const cv::Point2f loc, bool align_right=false, cv::Scalar color=cv::Scalar(255,255,255),
-                          cv::Scalar bg_color=cv::Scalar(50,50,50));
+                  const cv::Point2f loc, bool align_right = false, cv::Scalar color = cv::Scalar(255, 255, 255),
+                  cv::Scalar bg_color = cv::Scalar(50, 50, 50));
 
     std::set<std::string> GREEN_COLOR_CLASSIFIERS;
     std::set<std::string> RED_COLOR_CLASSIFIERS;
@@ -112,23 +112,21 @@ private:
 
 /** @brief Color generator (linear) for red-to-green values
  */
-class ColorgenRedGreen
-{
+class ColorgenRedGreen {
 public:
     /** @brief ColorgenRedGreen
      * @param[in] red_val - Value which will return green
      * @param green_val - Value which will return green
      */
-    ColorgenRedGreen( const float red_val, const float green_val )
+    ColorgenRedGreen(const float red_val, const float green_val)
         : red_val_(red_val),
-          green_val_(green_val)
-    {}
+          green_val_(green_val) {}
 
     /** @brief Generate accessor
      * @param val -- Value for which we would like to generate a color
      * @return  BGR Scalar for use in open cv plotting functions (e.g. cv::circle)
      */
-    cv::Scalar operator()( const float val ) const;
+    cv::Scalar operator()(const float val) const;
 
 private:
     const float red_val_;
@@ -138,28 +136,25 @@ private:
 /**
  * @brief Color generator (linear) between any two colors
  */
-class ColorgenLinear
-{
+class ColorgenLinear {
 public:
-    ColorgenLinear( const float val1, const float val2, cv::Scalar color1, cv::Scalar color2 )
+    ColorgenLinear(const float val1, const float val2, cv::Scalar color1, cv::Scalar color2)
         :
-          val1_(val1),
-          val2_(val2),
-          color1_(color1),
-          color2_(color2)
-    {}
+        val1_(val1),
+        val2_(val2),
+        color1_(color1),
+        color2_(color2) {}
 
     /** @brief Generate accessor
      * @param val -- Value for which we would like to generate a color
      * @return  BGR Scalar for use in open cv plotting functions (e.g. cv::circle)
      */
-    cv::Scalar operator()( const float val ) const;
+    cv::Scalar operator()(const float val) const;
 
 private:
-  const float val1_;
-  const float val2_;
+    const float val1_;
+    const float val2_;
 
-  const cv::Scalar color1_;
-  const cv::Scalar color2_;
-
+    const cv::Scalar color1_;
+    const cv::Scalar color2_;
 };

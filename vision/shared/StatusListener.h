@@ -7,22 +7,19 @@
 
 using namespace affdex;
 
-class StatusListener : public vision::ProcessStatusListener
-{
+class StatusListener : public vision::ProcessStatusListener {
 public:
 
-    StatusListener():is_running(true) {};
+    StatusListener() : is_running(true) {};
 
-    void onProcessingException(Exception& ex) override
-    {
+    void onProcessingException(Exception& ex) override {
         printException(ex);
         m.lock();
         is_running = false;
         m.unlock();
     };
 
-    bool isRunning()
-    {
+    bool isRunning() {
         bool ret = true;
         m.lock();
         ret = is_running;
@@ -41,10 +38,10 @@ private:
         catch (const std::exception& e) {
             printException(e, level + 1);
         }
-        catch (...) {}
+        catch (...) {
+        }
     }
 
     std::mutex m;
     bool is_running;
-
 };

@@ -3,4 +3,4 @@
 #include <Core.h>
 #include <string>
 
-affdex::path validatePath(affdex::path path, const std::string &env_variable = "");
+affdex::path validatePath(affdex::path path, const std::string& env_variable = "");

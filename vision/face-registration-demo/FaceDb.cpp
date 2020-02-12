@@ -10,19 +10,17 @@ using namespace affdex;
 using namespace std;
 
 bool FaceDb::exitLoop_ = false;
+
 void FaceDb::interrupt(int sig) {
     cout << "EXITING" << endl;
     exitLoop_ = true;
 }
 
 FaceDb::FaceDb(const string data_dir, const bool preview)
-    : data_dir_(data_dir)
-    , preview_(preview)
-{}
+    : data_dir_(data_dir), preview_(preview) {}
 
-affdex::vision::FaceRegistrar & FaceDb::faceRegistrar() const {
-    if (!face_registrar_)
-    {
+affdex::vision::FaceRegistrar& FaceDb::faceRegistrar() const {
+    if (!face_registrar_) {
         face_registrar_ = unique_ptr<affdex::vision::FaceRegistrar>(new affdex::vision::FaceRegistrar(data_dir_));
         signal(SIGINT, FaceDb::interrupt);
     }
@@ -41,33 +39,32 @@ string FaceDb::registeredIds() const {
     return output;
 }
 
-void FaceDb::showResult(const vision::FaceRegistrationResult result) const
-{
+void FaceDb::showResult(const vision::FaceRegistrationResult result) const {
     string hint_text = "Hint:      ";
     if (result.orientation_hints.size() > 0) {
         for (auto hint : result.orientation_hints) {
             string item = " ";
             switch (hint) {
-            case vision::FaceOrientation::CENTER: {
-                item = "c";
-                break;
-            }
-            case vision::FaceOrientation::UP: {
-                item = "u";
-                break;
-            }
-            case vision::FaceOrientation::DOWN: {
-                item = "d";
-                break;
-            }
-            case vision::FaceOrientation::LEFT: {
-                item = "l";
-                break;
-            }
-            case vision::FaceOrientation::RIGHT: {
-                item = "r";
-                break;
-            }
+                case vision::FaceOrientation::CENTER: {
+                    item = "c";
+                    break;
+                }
+                case vision::FaceOrientation::UP: {
+                    item = "u";
+                    break;
+                }
+                case vision::FaceOrientation::DOWN: {
+                    item = "d";
+                    break;
+                }
+                case vision::FaceOrientation::LEFT: {
+                    item = "l";
+                    break;
+                }
+                case vision::FaceOrientation::RIGHT: {
+                    item = "r";
+                    break;
+                }
             }
             hint_text.replace(static_cast<int>(hint) + 6, 1, item);
         }
@@ -75,8 +72,7 @@ void FaceDb::showResult(const vision::FaceRegistrationResult result) const
     cout << "\rScore=" << setw(3) << result.score << " " << hint_text;
 }
 
-vision::FaceRegistrationResult FaceDb::processFrame(const cv::Mat &frame, const int identifier)
-{
+vision::FaceRegistrationResult FaceDb::processFrame(const cv::Mat& frame, const int identifier) {
     vision::Frame image(frame.size().width, frame.size().height, frame.data, vision::Frame::ColorFormat::BGR);
 
     // We use the bounding box for the entire video frame here.  If there are multiple faces in the frame,
@@ -103,7 +99,8 @@ void FaceDb::videoRegister(const int identifier, path filename,
     title_ = filename;
     VideoReader video_reader(filename, frame_sampling_rate);
 
-    cout << endl << "App will exit when end of video is reached, Reg score reaches 100, or by pressing ctrl-C." << endl << endl;
+    cout << endl << "App will exit when end of video is reached, Reg score reaches 100, or by pressing ctrl-C." << endl
+         << endl;
 
     vision::FaceRegistrationResult result;
     result.score = 0;

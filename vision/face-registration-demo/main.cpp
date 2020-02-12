@@ -4,11 +4,11 @@
 
 using namespace std;
 
-int main(int argsc, char **argsv) {
+int main(int argsc, char** argsv) {
     try {
         Application app(argsc, argsv);
         app.run();
-    } catch (const exception &err) {
+    } catch (const exception& err) {
         cerr << err.what() << endl;
         return -1;
     }
