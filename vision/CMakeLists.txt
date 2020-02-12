@@ -52,6 +52,7 @@ FIND_AND_ADD_LIB(${rootProject} AffectivaVision)
 
 add_subdirectory(frame-detector-webcam-demo)
 add_subdirectory(frame-detector-video-demo)
+add_subdirectory(face-registration-demo)
 
 # --------------------
 # SUMMARY

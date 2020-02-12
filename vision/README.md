@@ -1,4 +1,12 @@
 # Sample apps for analyzing facial emotion using Affectiva's Automotive SDK for Linux
+### face-registration-demo
+
+This sample demonstrates use of the vision::FaceRegistrar class, getting its input from a video file. It analyzes received frames and registers a single face it finds.  It can also list and remove existing face registrations.
+
+After building, run the command `./face-registration-demo --help` for information on its command line options.
+
+---
+
 ### frame-detector-webcam-demo
 
 This sample demonstrates use of the SyncFrameDetector class, getting its input from a webcam. It analyzes received frames and displays the results on screen.

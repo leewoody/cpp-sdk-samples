@@ -12,14 +12,13 @@
 #include <iostream>
 #include <iomanip>
 
-
 using namespace affdex;
 
 class PlottingImageListener : public vision::ImageListener {
 
 public:
 
-    PlottingImageListener(std::ofstream &csv, bool draw_display, bool enable_logging, bool draw_face_id) :
+    PlottingImageListener(std::ofstream& csv, bool draw_display, bool enable_logging, bool draw_face_id) :
         draw_display(draw_display),
         capture_last_ts(0),
         capture_fps(0),
@@ -32,9 +31,15 @@ public:
         draw_face_id(draw_face_id),
         logging_enabled(enable_logging) {
         out_stream << "TimeStamp,faceId,upperLeftX,upperLeftY,lowerRightX,lowerRightY,confidence,interocularDistance,";
-        for (const auto& angle : viz.HEAD_ANGLES) out_stream << angle.second << ",";
-        for (const auto& emotion : viz.EMOTIONS) out_stream << emotion.second << ",";
-        for (const auto& expression : viz.EXPRESSIONS) out_stream << expression.second << ",";
+        for (const auto& angle : viz.HEAD_ANGLES) {
+            out_stream << angle.second << ",";
+        }
+        for (const auto& emotion : viz.EMOTIONS) {
+            out_stream << emotion.second << ",";
+        }
+        for (const auto& expression : viz.EXPRESSIONS) {
+            out_stream << expression.second << ",";
+        }
         out_stream << "mood,dominantEmotion,dominantEmotionConfidence,";
         out_stream << "identity,identityConfidence,age,ageConfidence,ageCategory";
         out_stream << std::endl;
@@ -79,12 +84,11 @@ public:
     void onImageResults(std::map<vision::FaceId, vision::Face> faces, vision::Frame image) override {
         std::lock_guard<std::mutex> lg(mtx);
         results.emplace_back(image, faces);
-        process_fps = 1000.0f / (image.getTimestamp() - process_last_ts) ;
+        process_fps = 1000.0f / (image.getTimestamp() - process_last_ts);
         process_last_ts = image.getTimestamp();
 
         processed_frames++;
-        if (faces.size() > 0)
-        {
+        if (faces.size() > 0) {
             frames_with_faces++;
         }
     };
@@ -98,23 +102,31 @@ public:
     void outputToFile(const std::map<vision::FaceId, vision::Face> faces, const double timeStamp) {
         if (faces.empty()) {
             out_stream << timeStamp
-                << ",nan,nan,nan,nan,nan,nan,nan,"; // face ID, bbox UL X, UL Y, BR X, BR Y, confidence, interocular distance
-            for (const auto& angle : viz.HEAD_ANGLES) out_stream << "nan,";
-            for (const auto& emotion : viz.EMOTIONS) out_stream << "nan,";
-            for (const auto& expression : viz.EXPRESSIONS) out_stream << "nan,";
-            out_stream << "nan,nan,nan,nan,nan,nan,nan,nan"; // mood, dominant emotion, dominant emotion confidence, identity, identity_confidence, age, age_confidence, age_category
+                       << ",nan,nan,nan,nan,nan,nan,nan,"; // face ID, bbox UL X, UL Y, BR X, BR Y, confidence, interocular distance
+            for (const auto& angle : viz.HEAD_ANGLES) {
+                out_stream << "nan,";
+            }
+            for (const auto& emotion : viz.EMOTIONS) {
+                out_stream << "nan,";
+            }
+            for (const auto& expression : viz.EXPRESSIONS) {
+                out_stream << "nan,";
+            }
+            out_stream
+                << "nan,nan,nan,nan,nan,nan,nan,nan"; // mood, dominant emotion, dominant emotion confidence, identity, identity_confidence, age, age_confidence, age_category
             out_stream << std::endl;
         }
 
-        for (auto & face_id_pair : faces) {
+        for (auto& face_id_pair : faces) {
             vision::Face f = face_id_pair.second;
             std::vector<vision::Point> bbox(f.getBoundingBox());
 
             out_stream << timeStamp << ","
-                << f.getId() << ","
-                << std::setprecision(0) << bbox[0].x << "," << bbox[0].y << "," << bbox[1].x << "," << bbox[1].y << "," << std::setprecision(4)
-                << f.getConfidence() << ","
-                << f.getMeasurements().at(vision::Measurement::INTEROCULAR_DISTANCE) << ",";
+                       << f.getId() << ","
+                       << std::setprecision(0) << bbox[0].x << "," << bbox[0].y << "," << bbox[1].x << "," << bbox[1].y
+                       << "," << std::setprecision(4)
+                       << f.getConfidence() << ","
+                       << f.getMeasurements().at(vision::Measurement::INTEROCULAR_DISTANCE) << ",";
 
             auto measurements = f.getMeasurements();
             for (auto m : viz.HEAD_ANGLES) {
@@ -135,7 +147,8 @@ public:
             out_stream << viz.MOODS[mood] << ",";
 
             vision::DominantEmotionMetric dominant_emotion_metric = f.getDominantEmotion();
-            out_stream << viz.DOMINANT_EMOTIONS[dominant_emotion_metric.dominantEmotion] << "," << dominant_emotion_metric.confidence << ",";
+            out_stream << viz.DOMINANT_EMOTIONS[dominant_emotion_metric.dominantEmotion] << ","
+                       << dominant_emotion_metric.confidence << ",";
 
             auto identity_metric = f.getIdentityMetric();
             std::string id_content;
@@ -159,7 +172,7 @@ public:
         const cv::Mat img = cv::Mat(image.getHeight(), image.getWidth(), CV_8UC3, imgdata.get());
         viz.updateImage(img);
 
-        for (auto & face_id_pair : faces) {
+        for (auto& face_id_pair : faces) {
             vision::Face f = face_id_pair.second;
 
             std::map<vision::FacePoint, vision::Point> points = f.getFacePoints();
@@ -181,7 +194,7 @@ public:
 
     void processResults() {
         while (getDataSize() > 0) {
-            const std::pair<vision::Frame, std::map<vision::FaceId, vision::Face> > dataPoint = getData();
+            const std::pair<vision::Frame, std::map<vision::FaceId, vision::Face>> dataPoint = getData();
             vision::Frame frame = dataPoint.first;
             const std::map<vision::FaceId, vision::Face> faces = dataPoint.second;
 
@@ -193,9 +206,9 @@ public:
 
             if (logging_enabled) {
                 std::cout << "timestamp: " << frame.getTimestamp()
-                << " cfps: " << getCaptureFrameRate()
-                << " pfps: " << getProcessingFrameRate()
-                << " faces: "<< faces.size() << std::endl;
+                          << " cfps: " << getCaptureFrameRate()
+                          << " pfps: " << getProcessingFrameRate()
+                          << " faces: " << faces.size() << std::endl;
             }
         }
     }
@@ -215,13 +228,14 @@ public:
 private:
     bool draw_display;
     std::mutex mtx;
-    std::deque<std::pair<vision::Frame, std::map<vision::FaceId, vision::Face> > > results;
+    std::deque<std::pair<vision::Frame, std::map < vision::FaceId, vision::Face>> >
+    results;
 
     timestamp capture_last_ts;
     unsigned int capture_fps;
     timestamp process_last_ts;
     unsigned int process_fps;
-    std::ofstream &out_stream;
+    std::ofstream& out_stream;
     std::chrono::time_point<std::chrono::system_clock> start;
 
     Visualizer viz;
