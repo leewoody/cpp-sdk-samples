@@ -1,8 +1,7 @@
 /*
   affdex_small_logo.h (PNG).
 */
-#include
-<vector>
+#include <vector>
 
 const unsigned char
 affdex_small_logo[] =
