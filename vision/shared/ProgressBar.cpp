@@ -22,40 +22,40 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include "progress_bar.h"
+#include "ProgressBar.h"
 
 ProgressBar::ProgressBar() {}
 
-ProgressBar::ProgressBar(unsigned long n_, const char* description_, std::ostream& out_) {
+ProgressBar::ProgressBar(unsigned long n, const char* description, std::ostream& out_l) {
 
-    n = n_;
-    frequency_update = n_;
-    description = description_;
-    out = &out_;
+    n_ = n;
+    frequency_update_ = n;
+    description_ = description;
+    out_ = &out_l;
 
-    unit_bar = "=";
-    unit_space = " ";
-    desc_width = std::strlen(description);  // character width of description field
+    unit_bar_ = "=";
+    unit_space_ = " ";
+    desc_width_ = std::strlen(description_);  // character width of description_ field
 
 }
 
-void ProgressBar::SetFrequencyUpdate(unsigned long frequency_update_) {
+void ProgressBar::setFrequencyUpdate(unsigned long frequency_update) {
 
-    if (frequency_update_ > n) {
-        frequency_update = n;    // prevents crash if freq_updates_ > n_
+    if (frequency_update > n_) {
+        frequency_update_ = n_;    // prevents crash if freq_updates_ > n_
     }
     else {
-        frequency_update = frequency_update_;
+        frequency_update_ = frequency_update;
     }
 }
 
-void ProgressBar::SetStyle(const char* unit_bar_, const char* unit_space_) {
+void ProgressBar::setStyle(const char* unit_bar, const char* unit_space) {
 
-    unit_bar = unit_bar_;
-    unit_space = unit_space_;
+    unit_bar_ = unit_bar;
+    unit_space_ = unit_space;
 }
 
-int ProgressBar::GetConsoleWidth() {
+int ProgressBar::getConsoleWidth() {
 
     int width;
 
@@ -69,64 +69,69 @@ int ProgressBar::GetConsoleWidth() {
     width = win.ws_col;
 #endif
 
+    //if console width too big or too small.
+    if (width > 255 || width <= 0) {
+        width = 255;
+    }
+
     return width;
 }
 
-int ProgressBar::GetBarLength() {
+int ProgressBar::getBarLength() {
 
     // get console width and according adjust the length of the progress bar
 
-    int bar_length = static_cast<int>((GetConsoleWidth() - desc_width - CHARACTER_WIDTH_PERCENTAGE) / 2.);
+    int bar_length = static_cast<int>((getConsoleWidth() - desc_width_ - CHARACTER_WIDTH_PERCENTAGE) / 2.);
 
     return bar_length;
 }
 
-void ProgressBar::ClearBarField() {
+void ProgressBar::clearBarField() {
 
-    for (int i = 0; i < GetConsoleWidth(); ++i) {
-        *out << " ";
+    for (int i = 0; i < getConsoleWidth(); ++i) {
+        *out_ << " ";
     }
-    *out << "\r" << std::flush;
+    *out_ << "\r" << std::flush;
 }
 
-void ProgressBar::Progressed(unsigned long idx_) {
+void ProgressBar::progressed(unsigned long idx) {
     try {
-        if (idx_ > n) {
-            throw idx_;
+        if (idx > n_) {
+            throw idx;
         }
 
-        // determines whether to update the progress bar from frequency_update
-        if ((idx_ != n) && (idx_ % (n / frequency_update) != 0)) {
+        // determines whether to update the progress bar from frequency_update_
+        if ((idx != n_) && (idx % (n_ / frequency_update_) != 0)) {
             return;
         }
 
         // calculate the size of the progress bar
-        int bar_size = GetBarLength();
+        int bar_size = getBarLength();
 
         // calculate percentage of progress
-        double progress_percent = idx_ * TOTAL_PERCENTAGE / n;
+        double progress_percent = idx * TOTAL_PERCENTAGE / n_;
 
         // calculate the percentage value of a unit bar
         double percent_per_unit_bar = TOTAL_PERCENTAGE / bar_size;
 
         // display progress bar
-        *out << " " << description << " [";
+        *out_ << " " << description_ << " [";
 
         for (int bar_length = 0; bar_length <= bar_size - 1; ++bar_length) {
             if (bar_length * percent_per_unit_bar < progress_percent) {
-                *out << unit_bar;
+                *out_ << unit_bar_;
             }
             else {
-                *out << unit_space;
+                *out_ << unit_space_;
             }
         }
 
-        *out << "]" << std::setw(CHARACTER_WIDTH_PERCENTAGE + 1) << std::setprecision(1) << std::fixed
-             << progress_percent << "%\r" << std::flush;
+        *out_ << "]" << std::setw(CHARACTER_WIDTH_PERCENTAGE + 1) << std::setprecision(1) << std::fixed
+              << progress_percent << "%\r\n" << std::flush;
     }
     catch (unsigned long e) {
-        ClearBarField();
-        std::cerr << "PROGRESS_BAR_EXCEPTION: _idx (" << e << ") went out of bounds, greater than n (" << n << ")."
+        clearBarField();
+        std::cerr << "PROGRESS_BAR_EXCEPTION: _idx (" << e << ") went out of bounds, greater than n (" << n_ << ")."
                   << std::endl << std::flush;
     }
 }

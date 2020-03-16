@@ -22,8 +22,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef _PROGRESS_BAR_
-#define _PROGRESS_BAR_
+#pragma once
 
 #ifdef _WINDOWS
 #include <windows.h>
@@ -44,27 +43,26 @@ class ProgressBar {
 public:
 
     ProgressBar();
-    ProgressBar(unsigned long n_, const char* description_ = "", std::ostream& out_ = std::cerr);
+    ProgressBar(unsigned long n, const char* description = "", std::ostream& out_l = std::cerr);
 
-    void SetFrequencyUpdate(unsigned long frequency_update_);
-    void SetStyle(const char* unit_bar_, const char* unit_space_);
+    void setFrequencyUpdate(unsigned long frequency_update);
+    void setStyle(const char* unit_bar, const char* unit_space);
 
-    void Progressed(unsigned long idx_);
+    void progressed(unsigned long idx);
 
 private:
 
-    unsigned long n;
-    unsigned int desc_width;
-    unsigned long frequency_update;
-    std::ostream* out;
+    unsigned long n_;
+    unsigned int desc_width_;
+    unsigned long frequency_update_;
+    std::ostream* out_;
 
-    const char* description;
-    const char* unit_bar;
-    const char* unit_space;
+    const char* description_;
+    const char* unit_bar_;
+    const char* unit_space_;
 
-    void ClearBarField();
-    int GetConsoleWidth();
-    int GetBarLength();
+    void clearBarField();
+    int getConsoleWidth();
+    int getBarLength();
 };
 
-#endif

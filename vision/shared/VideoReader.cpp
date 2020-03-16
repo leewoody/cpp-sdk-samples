@@ -37,7 +37,7 @@ uint64_t VideoReader::TotalFrames() const {
     return total_frames;
 }
 
-bool VideoReader::GetFrame(cv::Mat& bgr_frame, affdex::timestamp& timestamp_ms) {
+bool VideoReader::GetFrame(cv::Mat& bgr_frame, affdex::Timestamp& timestamp_ms) {
     bool frame_data_loaded;
 
     do {
@@ -49,13 +49,13 @@ bool VideoReader::GetFrame(cv::Mat& bgr_frame, affdex::timestamp& timestamp_ms) 
         ((timestamp_ms - last_timestamp_ms) < 1000 / sampling_frame_rate) && frame_data_loaded);
 
     last_timestamp_ms = timestamp_ms;
-    frame_progress->Progressed(current_frame);
+    frame_progress->progressed(current_frame);
     return frame_data_loaded;
 }
 
-bool VideoReader::GetFrameData(cv::Mat& bgr_frame, affdex::timestamp& timestamp_ms) {
+bool VideoReader::GetFrameData(cv::Mat& bgr_frame, affdex::Timestamp& timestamp_ms) {
     static const int MAX_ATTEMPTS = 2;
-    affdex::timestamp prev_timestamp_ms = cap.get(::CV_CAP_PROP_POS_MSEC);
+    affdex::Timestamp prev_timestamp_ms = cap.get(::CV_CAP_PROP_POS_MSEC);
     bool frame_found = cap.grab();
     bool frame_retrieved = cap.retrieve(bgr_frame);
     timestamp_ms = cap.get(::CV_CAP_PROP_POS_MSEC);

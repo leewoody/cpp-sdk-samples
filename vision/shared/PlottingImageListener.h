@@ -1,35 +1,16 @@
 #pragma once
 
-#include "Visualizer.h"
-
-#include <ImageListener.h>
-
-#include <deque>
-#include <mutex>
-#include <fstream>
-#include <condition_variable>
-
-#include <iostream>
-#include <iomanip>
+#include "ImageListener.h"
+#include "PlottingListener.h"
 
 using namespace affdex;
 
-class PlottingImageListener : public vision::ImageListener {
+class PlottingImageListener : public vision::ImageListener, public PlottingListener<vision::Face> {
 
 public:
 
     PlottingImageListener(std::ofstream& csv, bool draw_display, bool enable_logging, bool draw_face_id) :
-        draw_display(draw_display),
-        capture_last_ts(0),
-        capture_fps(0),
-        process_last_ts(0),
-        process_fps(0),
-        out_stream(csv),
-        start(std::chrono::system_clock::now()),
-        processed_frames(0),
-        frames_with_faces(0),
-        draw_face_id(draw_face_id),
-        logging_enabled(enable_logging) {
+        PlottingListener(csv, draw_display, enable_logging, draw_face_id), capture_last_ts(0), capture_fps(0) {
         out_stream << "TimeStamp,faceId,upperLeftX,upperLeftY,lowerRightX,lowerRightY,confidence,interocularDistance,";
         for (const auto& angle : viz.HEAD_ANGLES) {
             out_stream << angle.second << ",";
@@ -47,38 +28,9 @@ public:
         out_stream << std::fixed;
     }
 
-    unsigned int getProcessingFrameRate() {
-        std::lock_guard<std::mutex> lg(mtx);
-        return process_fps;
-    }
-
     unsigned int getCaptureFrameRate() {
         std::lock_guard<std::mutex> lg(mtx);
         return capture_fps;
-    }
-
-    int getDataSize() {
-        std::lock_guard<std::mutex> lg(mtx);
-        return results.size();
-    }
-
-    unsigned int getProcessedFrames() {
-        return processed_frames;
-    }
-
-    unsigned int getFramesWithFaces() {
-        return frames_with_faces;
-    }
-
-    double getFramesWithFacesPercent() {
-        return (static_cast<double>(frames_with_faces) / processed_frames) * 100;
-    }
-
-    std::pair<vision::Frame, std::map<vision::FaceId, vision::Face>> getData() {
-        std::lock_guard<std::mutex> lg(mtx);
-        std::pair<vision::Frame, std::map<vision::FaceId, vision::Face>> dpoint = results.front();
-        results.pop_front();
-        return dpoint;
     }
 
     void onImageResults(std::map<vision::FaceId, vision::Face> faces, vision::Frame image) override {
@@ -99,9 +51,9 @@ public:
         capture_last_ts = image.getTimestamp();
     };
 
-    void outputToFile(const std::map<vision::FaceId, vision::Face> faces, const double timeStamp) {
+    void outputToFile(const std::map<vision::FaceId, vision::Face>& faces, double time_stamp) override {
         if (faces.empty()) {
-            out_stream << timeStamp
+            out_stream << time_stamp
                        << ",nan,nan,nan,nan,nan,nan,nan,"; // face ID, bbox UL X, UL Y, BR X, BR Y, confidence, interocular distance
             for (const auto& angle : viz.HEAD_ANGLES) {
                 out_stream << "nan,";
@@ -117,11 +69,11 @@ public:
             out_stream << std::endl;
         }
 
-        for (auto& face_id_pair : faces) {
+        for (const auto& face_id_pair : faces) {
             vision::Face f = face_id_pair.second;
             std::vector<vision::Point> bbox(f.getBoundingBox());
 
-            out_stream << timeStamp << ","
+            out_stream << time_stamp << ","
                        << f.getId() << ","
                        << std::setprecision(0) << bbox[0].x << "," << bbox[0].y << "," << bbox[1].x << "," << bbox[1].y
                        << "," << std::setprecision(4)
@@ -167,12 +119,12 @@ public:
         }
     }
 
-    void draw(const std::map<vision::FaceId, vision::Face> faces, const vision::Frame& image) {
+    void draw(const std::map<vision::FaceId, vision::Face>& faces, const vision::Frame& image) override {
         std::shared_ptr<unsigned char> imgdata = image.getBGRByteArray();
         const cv::Mat img = cv::Mat(image.getHeight(), image.getWidth(), CV_8UC3, imgdata.get());
         viz.updateImage(img);
 
-        for (auto& face_id_pair : faces) {
+        for (const auto& face_id_pair : faces) {
             vision::Face f = face_id_pair.second;
 
             std::map<vision::FacePoint, vision::Point> points = f.getFacePoints();
@@ -192,7 +144,7 @@ public:
         viz.showImage();
     }
 
-    void processResults() {
+    void processResults() override {
         while (getDataSize() > 0) {
             const std::pair<vision::Frame, std::map<vision::FaceId, vision::Face>> dataPoint = getData();
             vision::Frame frame = dataPoint.first;
@@ -213,7 +165,7 @@ public:
         }
     }
 
-    void reset() {
+    void reset() override {
         std::lock_guard<std::mutex> lg(mtx);
         capture_last_ts = 0;
         capture_fps = 0;
@@ -226,22 +178,6 @@ public:
     }
 
 private:
-    bool draw_display;
-    std::mutex mtx;
-    std::deque<std::pair<vision::Frame, std::map < vision::FaceId, vision::Face>> >
-    results;
-
-    timestamp capture_last_ts;
+    Timestamp capture_last_ts;
     unsigned int capture_fps;
-    timestamp process_last_ts;
-    unsigned int process_fps;
-    std::ofstream& out_stream;
-    std::chrono::time_point<std::chrono::system_clock> start;
-
-    Visualizer viz;
-
-    unsigned int processed_frames;
-    unsigned int frames_with_faces;
-    bool draw_face_id;
-    bool logging_enabled;
 };

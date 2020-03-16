@@ -12,7 +12,7 @@ namespace po = boost::program_options;
 
 namespace {
     const std::string DISPLAY_DATA_DIR_ENV_VAR = "AFFECTIVA_VISION_DATA_DIR";
-    const affdex::str DATA_DIR_ENV_VAR = STR(DISPLAY_DATA_DIR_ENV_VAR);
+    const affdex::Str DATA_DIR_ENV_VAR = STR(DISPLAY_DATA_DIR_ENV_VAR);
 }
 
 Application::Application(int argsc, char** argsv) : command_line_(argsc, argsv) {}

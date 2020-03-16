@@ -28,7 +28,7 @@ affdex::vision::FaceRegistrar& FaceDb::faceRegistrar() const {
 }
 
 string FaceDb::registeredIds() const {
-    vector<identity> IDs = faceRegistrar().getIdentities();
+    vector<Identity> IDs = faceRegistrar().getIdentities();
 
     string separator;
     string output;
@@ -93,7 +93,7 @@ vision::FaceRegistrationResult FaceDb::processFrame(const cv::Mat& frame, const 
     return result;
 }
 
-void FaceDb::videoRegister(const int identifier, path filename,
+void FaceDb::videoRegister(const int identifier, Path filename,
                            const int frame_sampling_rate) {
     filename = validatePath(filename);
     title_ = filename;
@@ -107,7 +107,7 @@ void FaceDb::videoRegister(const int identifier, path filename,
     showResult(result);
 
     cv::Mat frame;
-    timestamp timestamp_ms;
+    Timestamp timestamp_ms;
     // Iterate over frames of video and attempt to register a face in it.
     while (!exitLoop_ && result.score < 100 && video_reader.GetFrame(frame, timestamp_ms)) {
         result = processFrame(frame, identifier);

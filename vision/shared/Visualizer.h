@@ -2,6 +2,8 @@
 
 #include <opencv2/imgproc/imgproc.hpp>
 #include <Face.h>
+#include "Occupant.h"
+#include "Object.h"
 #include <set>
 
 /** @brief Plot the face metrics using opencv highgui
@@ -26,7 +28,21 @@ public:
     * @param bottom_right  -- The bottom right point
     * @param valence       -- The valence value
     */
-    void drawBoundingBox(std::vector<affdex::vision::Point> bounding_box, float valence);
+    void drawBoundingBox(const std::vector<affdex::vision::Point>& bounding_box, float valence);
+
+    /** @brief DrawBoundingBox displays the bounding box
+    * @param top_left     -- The top left point
+    * @param bottom_right -- The bottom right point
+    * @param color        -- Bounding box's color
+    */
+    void drawBoundingBox(const std::vector<affdex::vision::Point>& bounding_box, cv::Scalar color);
+
+    /**
+     * @brief drawPolygon displays the polygon
+     * @param points    -- The points are used to draw the polygon
+     * @param color     -- The polygon's color
+     */
+    void drawPolygon(const std::vector<affdex::vision::Point>& points, cv::Scalar color);
 
     /** @brief DrawHeadOrientation Displays head orientation and associated value
     * @param name        -- Name of the classifier
@@ -48,8 +64,22 @@ public:
                          std::vector<affdex::vision::Point> bounding_box,
                          bool draw_face_id = false);
 
+    /**
+     * @brief Draw occupant related metrics
+     * @param occupant occupant
+     */
+    void drawOccupantMetrics(const affdex::vision::Occupant& occupant);
+
+    /**
+     * @brief Draw object related metrics
+     * @param object    -- object
+     * @param color     -- Color used to draw some metrics
+     * @param type      -- The type of object
+     */
+    void drawObjectMetrics(const affdex::vision::Object& object, const cv::Scalar& color, const std::string& type);
+
     /** @brief ShowImage displays image on screen
-    */
+        */
     void showImage();
 
     std::vector<std::pair<affdex::vision::Expression, std::string>> EXPRESSIONS;
@@ -73,7 +103,8 @@ private:
     /** @brief DrawClassifierOutput Displays a classifier and associated value
     * @param name        -- Name of the classifier
     * @param value       -- Value we are trying to display
-    * @param loc         -- Exact location. When aligh_right is (true/false) this should be the (upper-right, upper-left)
+    * @param loc         -- Exact location. When align_right is (true/false) this should be the (upper-right, 
+     * upper-left)
     * @param align_right -- Whether to right or left justify the text
     */
     void drawClassifierOutput(const std::string& classifier, const float value,
@@ -82,7 +113,8 @@ private:
     /** @brief DrawEqualizer displays an equalizer on screen either right or left justified at the anchor location (loc)
     * @param name        -- Name of the classifier
     * @param value       -- Value we are trying to display
-    * @param loc         -- Exact location. When aligh_right is (true/false) this should be the (upper-right, upper-left)
+    * @param loc         -- Exact location. When align_right is (true/false) this should be the (upper-right, 
+     * upper-left)
     * @param align_right -- Whether to right or left justify the text
     * @param color       -- Color
     */
@@ -92,7 +124,7 @@ private:
     /** @brief DrawText displays an text on screen either right or left justified at the anchor location (loc)
     * @param name        -- Name of the classifier
     * @param value       -- Value we are trying to display
-    * @param loc         -- Exact location. When aligh_right is (true/false) this should be the (upper-right, upper-left)
+    * @param loc         -- Exact location. When align_right is (true/false) this should be the (upper-right, upper-left)
     * @param align_right -- Whether to right or left justify the text
     * @param color       -- Color
     */

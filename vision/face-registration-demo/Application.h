@@ -17,7 +17,7 @@ private:
     bool parse(const int required_param_count);
 
     SubCommandParser command_line_;
-    affdex::path data_dir_;
+    affdex::Path data_dir_;
     std::unique_ptr<boost::program_options::options_description> options_;
     bool preview_ = false;
 

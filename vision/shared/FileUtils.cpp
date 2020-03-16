@@ -6,7 +6,7 @@
 
 using namespace std;
 
-affdex::path validatePath(affdex::path path, const affdex::str& env_variable) {
+affdex::Path validatePath(affdex::Path path, const affdex::Str& env_variable) {
     // set path to environment variable value if not supplied
 #ifdef _WIN32
     wchar_t *env_value = _wgetenv(env_variable.c_str());

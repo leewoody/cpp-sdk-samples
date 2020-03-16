@@ -169,23 +169,38 @@ void Visualizer::drawPoints(std::map<FacePoint, Point> points) {
     }
 }
 
-void Visualizer::drawBoundingBox(std::vector<Point> bounding_box, float valence) {
-    //Draw bounding box
-    const ColorgenRedGreen valence_color_generator(-100, 100);
-    cv::Point top_left(bounding_box[0].x, bounding_box[0].y);
-    cv::Point bottom_right(bounding_box[1].x, bounding_box[1].y);
-    cv::rectangle(img, top_left, bottom_right,
-                  valence_color_generator(valence), 3);
+void Visualizer::drawBoundingBox(const std::vector<Point>& bounding_box, float valence) {
+    if (!bounding_box.empty()) {
+        //Draw bounding box
+        const ColorgenRedGreen valence_color_generator(-100, 100);
+        cv::Point top_left(bounding_box[0].x, bounding_box[0].y);
+        cv::Point bottom_right(bounding_box[1].x, bounding_box[1].y);
+        cv::rectangle(img, top_left, bottom_right,
+                      valence_color_generator(valence), 3);
+    }
 }
 
-/** @brief DrawText prints text on screen either right or left justified at the anchor location (loc)
- * @param output_img  -- Image we are plotting on
- * @param name        -- Name of the classifier
- * @param value       -- Value we are trying to display
- * @param loc         -- Exact location. When aligh_right is (true/false) this should be the (upper-right, upper-left)
- * @param align_right -- Whether to right or left justify the text
- * @param color         -- Color
- */
+void Visualizer::drawBoundingBox(const std::vector<Point>& bounding_box, cv::Scalar color) {
+    if (!bounding_box.empty()) {
+        //Draw bounding box
+        cv::Point top_left(bounding_box[0].x, bounding_box[0].y);
+        cv::Point bottom_right(bounding_box[1].x, bounding_box[1].y);
+        cv::rectangle(img, top_left, bottom_right,
+                      color, 3);
+    }
+}
+
+void Visualizer::drawPolygon(const std::vector<Point>& points, cv::Scalar color) {
+    if (!points.empty()) {
+        //Draw polygon
+        std::vector<cv::Point> pts;
+        for (const auto& p: points) {
+            pts.push_back(cv::Point(p.x, p.y));
+        }
+        cv::polylines(img, pts, true, color, 3);
+    }
+}
+
 void Visualizer::drawText(const std::string& name, const std::string& value,
                           const cv::Point2f loc, bool align_right, cv::Scalar color, cv::Scalar bg_color) {
     const int block_width = 8;
@@ -206,12 +221,58 @@ void Visualizer::drawText(const std::string& name, const std::string& value,
     cv::putText(img, label + value, display_loc, cv::FONT_HERSHEY_SIMPLEX, 0.5f, color, 1);
 }
 
-/** @brief DrawClassifierOutput handles choosing between equalizer or text as well as defining the colors
- * @param name        -- Name of the classifier
- * @param value       -- Value we are trying to display
- * @param loc         -- Exact location. When aligh_right is (true/false) this should be the (upper-right, upper-left)
- * @param align_right -- Whether to right or left justify the text
- */
+void Visualizer::drawOccupantMetrics(const affdex::vision::Occupant& occupant) {
+
+    // Draw occupant bounding box
+    auto bbox = {occupant.boundingBox.getTopLeft(), occupant.boundingBox.getBottomRight()};
+    drawBoundingBox(bbox, {199, 110, 255});
+
+    //Do not draw if polygon's ID is Unknown
+    if (occupant.matchedSeat.cabinRegion.id != REGION_UNKNOWN) {
+        drawPolygon(occupant.matchedSeat.cabinRegion.vertices, {255, 255, 255});
+    }
+
+    int padding = occupant.boundingBox.getTopLeft().y; //Top left Y
+
+    const std::string id(std::to_string(occupant.matchedSeat.cabinRegion.id));
+    const std::string region_type(occupant.matchedSeat.cabinRegion.typeToString(occupant.matchedSeat.cabinRegion.type));
+    const std::string match_confidence(std::to_string(occupant.matchedSeat.matchConfidence));
+
+    drawText("Confidence", match_confidence, cv::Point(occupant.boundingBox.getTopLeft().x, padding -= spacing),
+             false);
+    drawText("Region " + id, region_type, cv::Point(occupant.boundingBox.getTopLeft().x, padding -= spacing), false);
+}
+
+void Visualizer::drawObjectMetrics(const affdex::vision::Object& object, const cv::Scalar& color, const std::string&
+type) {
+
+    // Draw object bounding box
+    auto bbox = {object.boundingBox.getTopLeft(), object.boundingBox.getBottomRight()};
+    //Configured area region;
+    drawBoundingBox(bbox, color);
+
+    for (const auto& o : object.matchedRegions) {
+        drawPolygon(o.cabinRegion.vertices, {255, 255, 255});
+    }
+
+    int padding = object.boundingBox.getTopLeft().y; //Top left Y
+
+    drawText("Type", type, cv::Point(object.boundingBox.getTopLeft().x, padding -= spacing), false);
+
+    const std::string id(std::to_string(object.matchedRegions[0].cabinRegion.id));
+    const std::string
+        region_type(object.matchedRegions[0].cabinRegion.typeToString(object.matchedRegions[0].cabinRegion.type));
+
+    const std::string match_confidence(std::to_string(object.confidence));
+
+    drawText("Confidence",
+             match_confidence,
+             cv::Point(object.boundingBox.getTopLeft().x, padding -= spacing),
+             false);
+
+    drawText("Region " + id, region_type, cv::Point(object.boundingBox.getTopLeft().x, padding -= spacing), false);
+}
+
 void Visualizer::drawClassifierOutput(const std::string& classifier,
                                       const float value, const cv::Point2f& loc, bool align_right) {
 
