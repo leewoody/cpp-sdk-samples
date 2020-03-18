@@ -83,8 +83,8 @@ public:
             const vision::Occupant occup = face_id_pair.second;
             viz.drawOccupantMetrics(occup);
         }
-
         viz.showImage();
+        image_data = viz.getImageData();
     }
 
     void processResults() override {

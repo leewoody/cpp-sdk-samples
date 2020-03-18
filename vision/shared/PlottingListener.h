@@ -26,7 +26,8 @@ public:
         processed_frames(0),
         frames_with_faces(0),
         draw_face_id(draw_face_id),
-        logging_enabled(enable_logging) {
+        logging_enabled(enable_logging),
+        image_data() {
     }
 
     unsigned int getProcessingFrameRate() {
@@ -58,6 +59,9 @@ public:
         return dpoint;
     }
 
+    //Needed to get Image data to create output video
+    cv::Mat getImageData() { return image_data; }
+
     virtual void outputToFile(const std::map<vision::Id, T>& id_type_map, double time_stamp) = 0;
 
     virtual void draw(const std::map<vision::Id, T>& id_type_map, const vision::Frame& image) = 0;
@@ -83,4 +87,5 @@ protected:
     unsigned int frames_with_faces;
     bool draw_face_id;
     bool logging_enabled;
+    cv::Mat image_data;
 };

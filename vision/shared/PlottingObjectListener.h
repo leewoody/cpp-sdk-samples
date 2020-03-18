@@ -136,8 +136,8 @@ public:
 
             viz.drawObjectMetrics(obj, color, obj_type);
         }
-
         viz.showImage();
+        image_data = viz.getImageData();
     }
 
     void processResults() override {

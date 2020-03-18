@@ -78,9 +78,17 @@ public:
      */
     void drawObjectMetrics(const affdex::vision::Object& object, const cv::Scalar& color, const std::string& type);
 
-    /** @brief ShowImage displays image on screen
-        */
-    void showImage();
+    /**
+     * @brief ShowImage displays image on screen for interval
+     * @param interval time to display in mSecs
+     */
+    void showImage(int interval = 5);
+
+    /**
+     * @brief To get the annotated video
+     * @return image data
+     */
+    cv::Mat getImageData();
 
     std::vector<std::pair<affdex::vision::Expression, std::string>> EXPRESSIONS;
     std::vector<std::pair<affdex::vision::Emotion, std::string>> EMOTIONS;

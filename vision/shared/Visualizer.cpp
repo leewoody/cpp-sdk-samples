@@ -352,9 +352,13 @@ void Visualizer::drawHeadOrientation(std::map<Measurement, float> headAngles, co
     }
 }
 
-void Visualizer::showImage() {
+void Visualizer::showImage(int interval) {
     cv::imshow("analyze video", img);
-    cv::waitKey(5);
+    cv::waitKey(interval);
+}
+
+cv::Mat Visualizer::getImageData() {
+    return img;
 }
 
 void Visualizer::overlayImage(const cv::Mat& foreground, cv::Mat& background, cv::Point2i location) {

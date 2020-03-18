@@ -36,6 +36,8 @@ struct ProgramOptions {
     bool disable_logging = false;
     bool object_enabled = false;
     bool occupant_enabled = false;
+    bool write_video = false;
+    cv::VideoWriter output_video;
 };
 
 void assemble_program_options(po::options_description& description, ProgramOptions& program_options) {
@@ -53,6 +55,7 @@ void assemble_program_options(po::options_description& description, ProgramOptio
              + DATA_DIR_ENV_VAR + "=/path/to/data").c_str())
         ("input,i", po::value<affdex::Path>(&program_options.video_path)->required(), "Video file to processs")
 #endif // _WIN32
+        ("output,o", po::value<std::string>(), "Output video path.")
         ("sfps",
          po::value<unsigned int>(&program_options.sampling_frame_rate)->default_value(0),
          "Input sampling frame rate. Default is 0, which means the app will respect the video's FPS and read all frames")
@@ -108,6 +111,10 @@ void process_object_video(unique_ptr<vision::SyncFrameDetector>& detector, std::
                 f(mat.size().width, mat.size().height, mat.data, vision::Frame::ColorFormat::BGR, timestamp_ms);
             detector->process(f);
             object_listener.processResults();
+            //To save output video file
+            if (program_options.write_video) {
+                program_options.output_video << object_listener.getImageData();
+            }
         }
 
         cout << "******************************************************************" << endl
@@ -154,6 +161,10 @@ void process_occupant_video(unique_ptr<vision::SyncFrameDetector>& detector, std
                 f(mat.size().width, mat.size().height, mat.data, vision::Frame::ColorFormat::BGR, timestamp_ms);
             detector->process(f);
             occupant_listener.processResults();
+            //To save output video file
+            if (program_options.write_video) {
+                program_options.output_video << occupant_listener.getImageData();
+            }
         }
 
         cout << "******************************************************************" << endl
@@ -203,6 +214,10 @@ void process_face_video(unique_ptr<vision::SyncFrameDetector>& detector,
                 f(mat.size().width, mat.size().height, mat.data, vision::Frame::ColorFormat::BGR, timestamp_ms);
             detector->process(f);
             image_listener.processResults();
+            //To save output video file
+            if (program_options.write_video) {
+                program_options.output_video << image_listener.getImageData();
+            }
         }
 
         cout << "******************************************************************" << endl
@@ -271,6 +286,19 @@ int main(int argsc, char** argsv) {
         std::cout << "Setting up face detection" << std::endl;
     }
 
+    program_options.write_video = args.count("output");
+    string video_name;
+    if (program_options.write_video) {
+        video_name = args["output"].as<string>();
+
+        // must use .avi extension!
+        string output_ext = boost::filesystem::extension(video_name);
+        if (output_ext != ".avi") {
+            std::cerr << "Invalid output file extension, must use .avi";
+            return 1;
+        }
+    }
+
     // set data_dir to env_var if not set on cmd line
     program_options.data_dir = validatePath(program_options.data_dir, DATA_DIR_ENV_VAR);
 
@@ -292,6 +320,28 @@ int main(int argsc, char** argsv) {
         if (!csv_file_stream.is_open()) {
             std::cerr << "Unable to open csv file " << csv_path << std::endl;
             return 1;
+        }
+
+        //Setup video writer
+        if (program_options.write_video) {
+            VideoReader video_reader(program_options.video_path, program_options.sampling_frame_rate);
+            cv::Mat mat;
+            Timestamp timestamp_ms;
+            if (video_reader.GetFrame(mat, timestamp_ms)) {
+                program_options.output_video.open(video_name,
+                                                  CV_FOURCC('D', 'X', '5', '0'),
+                                                  15,
+                                                  cv::Size(mat.size().width, mat.size().height),
+                                                  true);
+                if (!program_options.output_video.isOpened()) {
+                    std::cerr << "Error opening output video: " << video_name << std::endl;
+                    return 1;
+                }
+            }
+            else {
+                std::cerr << "Issue with passed input video: " << std::endl;
+                return 1;
+            }
         }
         if (detection_type == "_faces") {
             process_face_video(detector, csv_file_stream, program_options);

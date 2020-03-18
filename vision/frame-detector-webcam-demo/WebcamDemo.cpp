@@ -39,6 +39,8 @@ struct ProgramOptions {
     bool disable_logging = false;
     bool object_enabled = false;
     bool occupant_enabled = false;
+    bool write_video = false;
+    cv::VideoWriter output_video;
 };
 
 void assemble_program_options(po::options_description& description, ProgramOptions& program_options) {
@@ -59,6 +61,7 @@ void assemble_program_options(po::options_description& description, ProgramOptio
          po::value<std::vector<int>
          >(&program_options.resolution)->default_value(DEFAULT_RESOLUTION, "1280 720")->multitoken(),
          "Resolution in pixels (2-values): width height")
+        ("output,o", po::value<std::string>(), "Output video path.")
         ("pfps", po::value<int>(&program_options.process_framerate)->default_value(30), "Processing framerate.")
         ("cfps", po::value<int>(&program_options.camera_framerate)->default_value(30), "Camera capture framerate.")
         ("cid", po::value<int>(&program_options.camera_id)->default_value(0), "Camera ID.")
@@ -122,6 +125,10 @@ void process_face_stream(unique_ptr<vision::Detector>& frame_detector, std::ofst
         }
 
         image_listener.processResults();
+        //To save output video file
+        if (program_options.write_video) {
+            program_options.output_video << image_listener.getImageData();
+        }
     }
 #ifdef _WIN32
         while (!GetAsyncKeyState(VK_ESCAPE) && status_listener.isRunning());
@@ -172,6 +179,10 @@ void process_object_stream(unique_ptr<vision::Detector>& frame_detector, std::of
         }
 
         object_listener.processResults();
+        //To save output video file
+        if (program_options.write_video) {
+            program_options.output_video << object_listener.getImageData();
+        }
     }
 #ifdef _WIN32
         while (!GetAsyncKeyState(VK_ESCAPE) && status_listener.isRunning());
@@ -221,6 +232,10 @@ void process_occupant_stream(unique_ptr<vision::Detector>& frame_detector,
         }
 
         occupant_listener.processResults();
+        //To save output video file
+        if (program_options.write_video) {
+            program_options.output_video << occupant_listener.getImageData();
+        }
     }
 #ifdef _WIN32
         while (!GetAsyncKeyState(VK_ESCAPE) && status_listener.isRunning());
@@ -263,23 +278,35 @@ int main(int argsc, char** argsv) {
         }
 
         //Check for object or occupant argument present or not. If nothing is present then enable face by default.
-        {
-            if (args.count("object") && args.count("occupant")) {
-                std::cout << "Can't turn on Object and occupant detection" << std::endl;
-                std::cerr << "ERROR: Can't use --occupant and --object at the same time" << std::endl << std::endl;
-                std::cerr << "For help, use the -h option." << std::endl << std::endl;
+
+        if (args.count("object") && args.count("occupant")) {
+            std::cout << "Can't turn on Object and occupant detection" << std::endl;
+            std::cerr << "ERROR: Can't use --occupant and --object at the same time" << std::endl << std::endl;
+            std::cerr << "For help, use the -h option." << std::endl << std::endl;
+            return 1;
+        }
+        else if (args.count("object")) {
+            std::cout << "Setting up object detection" << std::endl;
+            program_options.object_enabled = true;
+        }
+        else if (args.count("occupant")) {
+            std::cout << "Setting up occupant detection" << std::endl;
+            program_options.occupant_enabled = true;
+        }
+        else {
+            std::cout << "Setting up face detection" << std::endl;
+        }
+
+        program_options.write_video = args.count("output");
+        string video_name;
+        if (program_options.write_video) {
+            video_name = args["output"].as<string>();
+
+            // must use .avi extension!
+            string output_ext = boost::filesystem::extension(video_name);
+            if (output_ext != ".avi") {
+                std::cerr << "Invalid output file extension, must use .avi";
                 return 1;
-            }
-            else if (args.count("object")) {
-                std::cout << "Setting up object detection" << std::endl;
-                program_options.object_enabled = true;
-            }
-            else if (args.count("occupant")) {
-                std::cout << "Setting up occupant detection" << std::endl;
-                program_options.occupant_enabled = true;
-            }
-            else {
-                std::cout << "Setting up face detection" << std::endl;
             }
         }
 
@@ -339,6 +366,23 @@ int main(int argsc, char** argsv) {
         if (!web_cam.isOpened()) {
             std::cerr << "Error opening webcam" << std::endl;
             return 1;
+        }
+        //Setup video writer
+        if (program_options.write_video) {
+            cv::Mat mat;
+            if (!web_cam.read(mat)) {   //Capture an image from the camera
+                std::cerr << "Failed to read frame from webcam while setting up video writer" << std::endl;
+                return 1;
+            }
+            program_options.output_video.open(video_name,
+                                              CV_FOURCC('D', 'X', '5', '0'),
+                                              15,
+                                              cv::Size(mat.size().width, mat.size().height),
+                                              true);
+            if (!program_options.output_video.isOpened()) {
+                std::cerr << "Error opening output video: " << video_name << std::endl;
+                return 1;
+            }
         }
 
         if (!program_options.occupant_enabled && !program_options.object_enabled) {

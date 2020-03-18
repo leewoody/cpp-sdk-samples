@@ -142,6 +142,7 @@ public:
         }
 
         viz.showImage();
+        image_data = viz.getImageData();
     }
 
     void processResults() override {
