@@ -17,50 +17,34 @@ using namespace affdex;
 template<typename T> class PlottingListener {
 
 public:
-    PlottingListener(std::ofstream& csv, bool draw_display, bool enable_logging, bool draw_face_id) :
-        draw_display(draw_display),
-        process_last_ts(0),
-        process_fps(0),
-        out_stream(csv),
-        start(std::chrono::system_clock::now()),
-        processed_frames(0),
-        frames_with_faces(0),
-        draw_face_id(draw_face_id),
-        logging_enabled(enable_logging),
-        image_data() {
-    }
-
-    unsigned int getProcessingFrameRate() {
-        std::lock_guard<std::mutex> lg(mtx);
-        return process_fps;
+    PlottingListener(std::ofstream& csv, bool draw_display, bool enable_logging) :
+        out_stream_(csv),
+        image_data_(),
+        start_(std::chrono::system_clock::now()),
+        process_last_ts_(0),
+        draw_display_(draw_display),
+        processed_frames_(0),
+        logging_enabled_(enable_logging) {
     }
 
     int getDataSize() {
         std::lock_guard<std::mutex> lg(mtx);
-        return results.size();
+        return results_.size();
     }
 
     unsigned int getProcessedFrames() {
-        return processed_frames;
-    }
-
-    unsigned int getFramesWithFaces() {
-        return frames_with_faces;
-    }
-
-    double getFramesWithFacesPercent() {
-        return (static_cast<double>(frames_with_faces) / processed_frames) * 100;
+        return processed_frames_;
     }
 
     std::pair<vision::Frame, std::map<vision::Id, T>> getData() {
         std::lock_guard<std::mutex> lg(mtx);
-        std::pair<vision::Frame, std::map<vision::Id, T>> dpoint = results.front();
-        results.pop_front();
+        std::pair<vision::Frame, std::map<vision::Id, T>> dpoint = results_.front();
+        results_.pop_front();
         return dpoint;
     }
 
     //Needed to get Image data to create output video
-    cv::Mat getImageData() { return image_data; }
+    cv::Mat getImageData() { return image_data_; }
 
     virtual void outputToFile(const std::map<vision::Id, T>& id_type_map, double time_stamp) = 0;
 
@@ -72,20 +56,16 @@ public:
 
 protected:
     using frame_type_id_pair = std::pair<vision::Frame, std::map<vision::Id, T>>;
-    bool draw_display;
+    std::ofstream& out_stream_;
+    Visualizer viz_;
+    cv::Mat image_data_;
+
+    std::chrono::time_point<std::chrono::system_clock> start_;
     std::mutex mtx;
-    std::deque<frame_type_id_pair> results;
 
-    Timestamp process_last_ts;
-    unsigned int process_fps;
-    std::ofstream& out_stream;
-    std::chrono::time_point<std::chrono::system_clock> start;
-
-    Visualizer viz;
-
-    unsigned int processed_frames;
-    unsigned int frames_with_faces;
-    bool draw_face_id;
-    bool logging_enabled;
-    cv::Mat image_data;
+    std::deque<frame_type_id_pair> results_;
+    Timestamp process_last_ts_;
+    bool draw_display_;
+    unsigned int processed_frames_;
+    bool logging_enabled_;
 };

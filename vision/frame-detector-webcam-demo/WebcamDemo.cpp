@@ -24,10 +24,17 @@ namespace po = boost::program_options; // abbreviate namespace
 static const std::string DISPLAY_DATA_DIR_ENV_VAR = "AFFECTIVA_VISION_DATA_DIR";
 static const affdex::Str DATA_DIR_ENV_VAR = STR(DISPLAY_DATA_DIR_ENV_VAR);
 
-struct ProgramOptions {
+struct programOptions {
+
+    enum DetectionType {
+        FACE,
+        OBJECT,
+        OCCUPANT
+    };
     // cmd line args
     affdex::Path data_dir;
     affdex::Path output_file_path;
+    affdex::Path output_video_path;
     std::vector<int> resolution;
     int process_framerate;
     int camera_framerate;
@@ -37,31 +44,33 @@ struct ProgramOptions {
     bool sync = false;
     bool draw_id = true;
     bool disable_logging = false;
-    bool object_enabled = false;
-    bool occupant_enabled = false;
     bool write_video = false;
     cv::VideoWriter output_video;
+    DetectionType detection_type = FACE;
 };
 
-void assemble_program_options(po::options_description& description, ProgramOptions& program_options) {
+void assembleProgramOptions(po::options_description& description, programOptions& program_options) {
     const std::vector<int> DEFAULT_RESOLUTION{1280, 720};
 
     description.add_options()
         ("help,h", po::bool_switch()->default_value(false), "Display this help message.")
 #ifdef _WIN32
-    ("data,d", po::wvalue<affdex::Path>(&data_dir),
+    ("data,d", po::wvalue<affdex::Path>(&program_options.data_dir),
             std::string("Path to the data folder. Alternatively, specify the path via the environment variable "
                 + DISPLAY_DATA_DIR_ENV_VAR + R"(=\path\to\data)").c_str())
+    ("output,o", po::wvalue<affdex::Path>(&program_options.output_video_path), "Output video path.")
+
 #else //  _WIN32
         ("data,d", po::value<affdex::Path>(&program_options.data_dir),
          (std::string("Path to the data folder. Alternatively, specify the path via the environment variable ")
              + DATA_DIR_ENV_VAR + "=/path/to/data").c_str())
+        ("output,o", po::value<affdex::Path>(&program_options.output_video_path), "Output video path.")
+
 #endif // _WIN32
         ("resolution,r",
          po::value<std::vector<int>
          >(&program_options.resolution)->default_value(DEFAULT_RESOLUTION, "1280 720")->multitoken(),
          "Resolution in pixels (2-values): width height")
-        ("output,o", po::value<std::string>(), "Output video path.")
         ("pfps", po::value<int>(&program_options.process_framerate)->default_value(30), "Processing framerate.")
         ("cfps", po::value<int>(&program_options.camera_framerate)->default_value(30), "Camera capture framerate.")
         ("cid", po::value<int>(&program_options.camera_id)->default_value(0), "Camera ID.")
@@ -83,18 +92,15 @@ void assemble_program_options(po::options_description& description, ProgramOptio
         ("occupant", "Enable occupant detection");
 }
 
-void process_face_stream(unique_ptr<vision::Detector>& frame_detector, std::ofstream& csv_file_stream,
-                         ProgramOptions program_options, StatusListener& status_listener, cv::VideoCapture& webcam) {
+void processFaceStream(unique_ptr<vision::Detector>& frame_detector, std::ofstream& csv_file_stream,
+                       programOptions program_options, StatusListener& status_listener, cv::VideoCapture& webcam) {
 
     // prepare listeners
-    //std::ofstream csvFileStream;
-    PlottingImageListener
-        image_listener
-        (csv_file_stream, program_options.draw_display, !program_options.disable_logging, program_options.draw_id);
+    PlottingImageListener image_listener(csv_file_stream, program_options.draw_display, !program_options
+        .disable_logging, program_options.draw_id);
     AFaceListener face_listener;
 
-
-    // configure the FrameDetector by enabling features and assigning listeners
+    // configure the Detector by enabling features and assigning listeners
     frame_detector->enable({vision::Feature::EMOTIONS, vision::Feature::EXPRESSIONS, vision::Feature::IDENTITY,
                             vision::Feature::APPEARANCES});
     frame_detector->setImageListener(&image_listener);
@@ -108,16 +114,16 @@ void process_face_stream(unique_ptr<vision::Detector>& frame_detector, std::ofst
     do {
         cv::Mat img;
         if (!webcam.read(img)) {   //Capture an image from the camera
-            std::cerr << "Failed to read frame from webcam" << std::endl;
+            std::cerr << "Failed to read frame from webcam\n";
             break;
         }
 
         Timestamp ts = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::system_clock::now() - start_time).count();
 
-        // Create a Frame from the webcam image and process it with the FrameDetector
+        // Create a Frame from the webcam image and process it with the Detector
         const vision::Frame f(img.size().width, img.size().height, img.data, vision::Frame::ColorFormat::BGR, ts);
-        if (sync) {
+        if (program_options.sync) {
             dynamic_cast<vision::SyncFrameDetector*>(frame_detector.get())->process(f);
         }
         else {
@@ -137,8 +143,8 @@ void process_face_stream(unique_ptr<vision::Detector>& frame_detector, std::ofst
 #endif
 }
 
-void process_object_stream(unique_ptr<vision::Detector>& frame_detector, std::ofstream& csv_file_stream,
-                           ProgramOptions program_options, StatusListener& status_listener, cv::VideoCapture& webcam) {
+void processObjectStream(unique_ptr<vision::Detector>& frame_detector, std::ofstream& csv_file_stream,
+                         programOptions program_options, StatusListener& status_listener, cv::VideoCapture& webcam) {
 
     // prepare listeners
     PlottingObjectListener object_listener(csv_file_stream,
@@ -149,7 +155,7 @@ void process_object_stream(unique_ptr<vision::Detector>& frame_detector, std::of
                                            frame_detector->getCabinRegionConfig().getRegions());
 
 
-    // configure the FrameDetector by enabling features and assigning listeners
+    // configure the Detector by enabling features and assigning listeners
     frame_detector->enable({vision::Feature::CHILD_SEATS, vision::Feature::PHONES});
     frame_detector->setObjectListener(&object_listener);
     frame_detector->setProcessStatusListener(&status_listener);
@@ -162,16 +168,16 @@ void process_object_stream(unique_ptr<vision::Detector>& frame_detector, std::of
     do {
         cv::Mat img;
         if (!webcam.read(img)) {   //Capture an image from the camera
-            std::cerr << "Failed to read frame from webcam" << std::endl;
+            std::cerr << "Failed to read frame from webcam\n";
             break;
         }
 
         Timestamp ts = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::system_clock::now() - start_time).count();
 
-        // Create a Frame from the webcam image and process it with the FrameDetector
+        // Create a Frame from the webcam image and process it with the Detector
         const vision::Frame f(img.size().width, img.size().height, img.data, vision::Frame::ColorFormat::BGR, ts);
-        if (sync) {
+        if (program_options.sync) {
             dynamic_cast<vision::SyncFrameDetector*>(frame_detector.get())->process(f);
         }
         else {
@@ -191,18 +197,18 @@ void process_object_stream(unique_ptr<vision::Detector>& frame_detector, std::of
 #endif
 }
 
-void process_occupant_stream(unique_ptr<vision::Detector>& frame_detector,
-                             std::ofstream& csv_file_stream,
-                             ProgramOptions program_options,
-                             StatusListener& status_listener,
-                             cv::VideoCapture& webcam) {
+void processOccupantStream(unique_ptr<vision::Detector>& frame_detector,
+                           std::ofstream& csv_file_stream,
+                           programOptions program_options,
+                           StatusListener& status_listener,
+                           cv::VideoCapture& webcam) {
 
     // prepare listeners
     PlottingOccupantListener occupant_listener(csv_file_stream, program_options.draw_display, !program_options
         .disable_logging, program_options.draw_id, 500, frame_detector->getCabinRegionConfig().getRegions());
 
 
-    // configure the FrameDetector by enabling features and assigning listeners
+    // configure the Detector by enabling features and assigning listeners
     frame_detector->enable({vision::Feature::CHILD_SEATS, vision::Feature::PHONES});
     frame_detector->setOccupantListener(&occupant_listener);
     frame_detector->setProcessStatusListener(&status_listener);
@@ -215,16 +221,16 @@ void process_occupant_stream(unique_ptr<vision::Detector>& frame_detector,
     do {
         cv::Mat img;
         if (!webcam.read(img)) {   //Capture an image from the camera
-            std::cerr << "Failed to read frame from webcam" << std::endl;
+            std::cerr << "Failed to read frame from webcam\n";
             break;
         }
 
         Timestamp ts = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::system_clock::now() - start_time).count();
 
-        // Create a Frame from the webcam image and process it with the FrameDetector
+        // Create a Frame from the webcam image and process it with the Detector
         const vision::Frame f(img.size().width, img.size().height, img.data, vision::Frame::ColorFormat::BGR, ts);
-        if (sync) {
+        if (program_options.sync) {
             dynamic_cast<vision::SyncFrameDetector*>(frame_detector.get())->process(f);
         }
         else {
@@ -255,11 +261,11 @@ int main(int argsc, char** argsv) {
         std::cout << std::fixed << std::setprecision(precision);
 
         //Gathering program options
-        ProgramOptions program_options;
+        programOptions program_options;
 
         po::options_description description
-            ("Project for demoing the Affdex SDK FrameDetector class (grabbing and processing frames from the camera).");
-        assemble_program_options(description, program_options);
+            ("Project for demoing the Affdex SDK Detector class (grabbing and processing frames from the camera).");
+        assembleProgramOptions(description, program_options);
 
         //verifying command line arguments
         po::variables_map args;
@@ -273,39 +279,36 @@ int main(int argsc, char** argsv) {
         }
         catch (po::error& e) {
             std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
-            std::cerr << "For help, use the -h option." << std::endl << std::endl;
+            std::cerr << "For help, use the -h option.\n\n";
             return 1;
         }
 
         //Check for object or occupant argument present or not. If nothing is present then enable face by default.
 
         if (args.count("object") && args.count("occupant")) {
-            std::cout << "Can't turn on Object and occupant detection" << std::endl;
-            std::cerr << "ERROR: Can't use --occupant and --object at the same time" << std::endl << std::endl;
-            std::cerr << "For help, use the -h option." << std::endl << std::endl;
+            std::cerr << "Can't turn on Object and occupant detection\n";
+            std::cerr << "ERROR: Can't use --occupant and --object at the same time\n";
+            std::cerr << "For help, use the -h option.\n\n";
             return 1;
         }
         else if (args.count("object")) {
-            std::cout << "Setting up object detection" << std::endl;
-            program_options.object_enabled = true;
+            std::cout << "Setting up object detection\n";
+            program_options.detection_type = program_options.OBJECT;
         }
         else if (args.count("occupant")) {
-            std::cout << "Setting up occupant detection" << std::endl;
-            program_options.occupant_enabled = true;
+            std::cout << "Setting up occupant detection\n";
+            program_options.detection_type = program_options.OCCUPANT;
         }
         else {
-            std::cout << "Setting up face detection" << std::endl;
+            std::cout << "Setting up face detection\n";
         }
 
         program_options.write_video = args.count("output");
-        string video_name;
         if (program_options.write_video) {
-            video_name = args["output"].as<string>();
-
             // must use .avi extension!
-            string output_ext = boost::filesystem::extension(video_name);
+            string output_ext = boost::filesystem::extension(program_options.output_video_path);
             if (output_ext != ".avi") {
-                std::cerr << "Invalid output file extension, must use .avi";
+                std::cerr << "Invalid output file extension, must use .avi\n";
                 return 1;
             }
         }
@@ -314,17 +317,17 @@ int main(int argsc, char** argsv) {
         program_options.data_dir = validatePath(program_options.data_dir, DATA_DIR_ENV_VAR);
 
         if (program_options.resolution.size() != 2) {
-            std::cerr << "Only two numbers must be specified for resolution." << std::endl;
+            std::cerr << "Only two numbers must be specified for resolution.\n";
             return 1;
         }
 
         if (program_options.resolution[0] <= 0 || program_options.resolution[1] <= 0) {
-            std::cerr << "Resolutions must be positive numbers." << std::endl;
+            std::cerr << "Resolutions must be positive numbers.\n";
             return 1;
         }
 
         if (program_options.draw_id && !program_options.draw_display) {
-            std::cerr << "Can't draw face id while drawing to screen is disabled" << std::endl;
+            std::cerr << "Can't draw face id while drawing to screen is disabled\n";
             std::cerr << description << std::endl;
             return 1;
         }
@@ -339,9 +342,9 @@ int main(int argsc, char** argsv) {
             return 1;
         }
 
-        // create the FrameDetector
+        // create the Detector
         unique_ptr<vision::Detector> frame_detector;
-        if (sync) {
+        if (program_options.sync) {
             frame_detector = std::unique_ptr<vision::Detector>(new vision::SyncFrameDetector(program_options.data_dir,
                                                                                              program_options.num_faces));
         }
@@ -364,39 +367,39 @@ int main(int argsc, char** argsv) {
 
         const auto start_time = std::chrono::system_clock::now();
         if (!web_cam.isOpened()) {
-            std::cerr << "Error opening webcam" << std::endl;
+            std::cerr << "Error opening webcam\n";
             return 1;
         }
         //Setup video writer
         if (program_options.write_video) {
             cv::Mat mat;
             if (!web_cam.read(mat)) {   //Capture an image from the camera
-                std::cerr << "Failed to read frame from webcam while setting up video writer" << std::endl;
+                std::cerr << "Failed to read frame from webcam while setting up video writer\n";
                 return 1;
             }
-            program_options.output_video.open(video_name,
+            program_options.output_video.open(program_options.output_video_path,
                                               CV_FOURCC('D', 'X', '5', '0'),
                                               15,
                                               cv::Size(mat.size().width, mat.size().height),
                                               true);
             if (!program_options.output_video.isOpened()) {
-                std::cerr << "Error opening output video: " << video_name << std::endl;
+                std::cerr << "Error opening output video: " << program_options.output_video_path << std::endl;
                 return 1;
             }
         }
-
-        if (!program_options.occupant_enabled && !program_options.object_enabled) {
-            process_face_stream(frame_detector, csv_file_stream, program_options, status_listener, web_cam);
-        }
-        else if (program_options.object_enabled) {
-            process_object_stream(frame_detector, csv_file_stream, program_options, status_listener, web_cam);
-        }
-        else if (program_options.occupant_enabled) {
-            process_occupant_stream(frame_detector, csv_file_stream, program_options, status_listener, web_cam);
-        }
-        else {
-            std::cerr << "This should never happen " << csv_path << std::endl;
-            return 1;
+        switch (program_options.detection_type) {
+            case program_options.OBJECT:
+                processObjectStream(frame_detector, csv_file_stream, program_options, status_listener, web_cam);
+                break;
+            case program_options.OCCUPANT:
+                processOccupantStream(frame_detector, csv_file_stream, program_options, status_listener, web_cam);
+                break;
+            case program_options.FACE:
+                processFaceStream(frame_detector, csv_file_stream, program_options, status_listener, web_cam);
+                break;
+            default:
+                std::cerr << "This should never happen " << program_options.detection_type << std::endl;
+                return 1;
         }
 
         frame_detector->stop();

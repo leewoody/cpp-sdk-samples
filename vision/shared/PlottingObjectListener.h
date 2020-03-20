@@ -1,6 +1,8 @@
 #pragma once
 
 #include "ObjectListener.h"
+
+#include <utility>
 #include "PlottingListener.h"
 
 using namespace affdex::vision;
@@ -9,19 +11,19 @@ class PlottingObjectListener : public ObjectListener, public PlottingListener<Ob
 
 public:
 
-    PlottingObjectListener(std::ofstream& csv, bool draw_display, bool enable_logging, bool draw_face_id, const
-    std::map<Feature, Duration> callback_intervals, std::vector<CabinRegion> cabin_regions) :
-        PlottingListener(csv, draw_display, enable_logging, draw_face_id), callback_intervals_(callback_intervals),
-        cabin_regions_(cabin_regions) {
-        out_stream << "TimeStamp, objectId, confidence, upperLeftX, upperLeftY, lowerRightX, lowerRightY, ObjectType";
+    PlottingObjectListener(std::ofstream& csv, bool draw_display, bool enable_logging, bool draw_object_id,
+        const std::map<Feature, Duration>& callback_intervals, std::vector<CabinRegion> cabin_regions) :
+        PlottingListener(csv, draw_display, enable_logging), callback_intervals_(callback_intervals),
+        cabin_regions_(std::move(cabin_regions)), draw_object_id_(draw_object_id) {
+        out_stream_ << "TimeStamp, objectId, confidence, upperLeftX, upperLeftY, lowerRightX, lowerRightY, ObjectType";
 
         for (const auto& cr :cabin_regions_) {
-            out_stream << "," << "Region " << cr.id;
+            out_stream_ << "," << "Region " << cr.id;
         }
 
-        out_stream << std::endl;
-        out_stream.precision(2);
-        out_stream << std::fixed;
+        out_stream_ << std::endl;
+        out_stream_.precision(2);
+        out_stream_ << std::fixed;
     }
 
     std::map<Feature, Duration> getCallbackIntervals() const override {
@@ -30,13 +32,12 @@ public:
 
     void onObjectResults(const std::map<ObjectId, Object>& objects, vision::Frame frame) override {
         std::lock_guard<std::mutex> lg(mtx);
-        results.emplace_back(frame, objects);
-        process_fps = 1000.0f / (frame.getTimestamp() - process_last_ts);
-        process_last_ts = frame.getTimestamp();
+        results_.emplace_back(frame, objects);
+        process_last_ts_ = frame.getTimestamp();
 
-        processed_frames++;
-        if (objects.size() > 0) {
-            frames_with_faces++;
+        processed_frames_++;
+        if (!objects.empty()) {
+            frames_with_objects_++;
         }
     };
 
@@ -59,85 +60,55 @@ public:
         }
     }
 
-    static Object::Type stringToType(const std::string& label) {
-        if (label.compare("UNKNOWN") == 0) {
-            return Object::Type::UNKNOWN;
-        }
-        else if (label.compare("PHONE") == 0) {
-            return Object::Type::PHONE;
-        }
-        else if (label.compare("CHILD_SEAT") == 0) {
-            return Object::Type::CHILD_SEAT;
-        }
-        else {
-            throw std::runtime_error{
-                std::string("Object::stringToType encountered unrecognized Type: ") + label};
-        }
-    }
-
     void outputToFile(const std::map<ObjectId, Object>& objects, double time_stamp) override {
         if (objects.empty()) {
             // TimeStamp objectId confidence upperLeftX upperLeftY lowerRightX lowerRightY ObjectType"
-            out_stream << time_stamp << ",nan,nan,nan,nan,nan,nan,nan";
+            out_stream_ << time_stamp << ",nan,nan,nan,nan,nan,nan,nan";
             for (const auto& cr :cabin_regions_) {
-                out_stream << ",nan";
+                out_stream_ << ",nan";
             }
-            out_stream << std::endl;
+            out_stream_ << std::endl;
         }
 
-        for (const auto& object_id_pair : objects) {
-            Object obj = object_id_pair.second;
+        for (const auto& id_obj_pair : objects) {
+            Object obj = id_obj_pair.second;
             std::vector<Point> bbox({obj.boundingBox.getTopLeft(), obj.boundingBox.getBottomRight()});
 
-            out_stream << time_stamp << ","
-                       << object_id_pair.first << ","
-                       << obj.confidence << ","
-                       << std::setprecision(0) << bbox[0].x << "," << bbox[0].y << "," << bbox[1].x << "," << bbox[1].y
-                       << "," << std::setprecision(4)
-                       << typeToString(obj.type);
+            out_stream_ << time_stamp << ","
+                        << id_obj_pair.first << ","
+                        << obj.confidence << ","
+                        << std::setprecision(0) << bbox[0].x << "," << bbox[0].y << "," << bbox[1].x << "," << bbox[1].y
+                        << "," << std::setprecision(4)
+                        << typeToString(obj.type);
 
             for (const auto& cr :cabin_regions_) {
                 bool found = false;
                 for (const auto& o : obj.matchedRegions) {
                     if (cr.id == o.cabinRegion.id) {
-                        out_stream << "," << o.matchConfidence;
+                        out_stream_ << "," << o.matchConfidence;
                         found = true;
                         break;
                     }
                 }
                 if (!found) {
-                    out_stream << "," << 0;
+                    out_stream_ << "," << 0;
                 }
             }
-            out_stream << std::endl;
+            out_stream_ << std::endl;
         }
     }
 
     void draw(const std::map<ObjectId, Object>& objects, const vision::Frame& image) override {
         std::shared_ptr<unsigned char> img_data = image.getBGRByteArray();
         const cv::Mat img = cv::Mat(image.getHeight(), image.getWidth(), CV_8UC3, img_data.get());
-        viz.updateImage(img);
+        viz_.updateImage(img);
 
-        for (const auto& face_id_pair : objects) {
-            const Object obj = face_id_pair.second;
-            //default color ==GRAY
-            cv::Scalar color(128, 128, 128);
-            std::string obj_type;
-            if (typeToString(obj.type) == "PHONE") {
-                //phone color == YELLOW
-                color = {0, 255, 255};
-                obj_type = "PHONE";
-            }
-            else if (typeToString(obj.type) == "CHILD_SEAT") {
-                //child seat color == RED
-                color = {0, 0, 255};
-                obj_type = "CHILD_SEAT";
-            }
-
-            viz.drawObjectMetrics(obj, color, obj_type);
+        for (const auto& id_object_pair : objects) {
+            viz_.drawObjectMetrics(id_object_pair.second);
         }
-        viz.showImage();
-        image_data = viz.getImageData();
+
+        viz_.showImage();
+        image_data_ = viz_.getImageData();
     }
 
     void processResults() override {
@@ -146,31 +117,39 @@ public:
             vision::Frame frame = dataPoint.first;
             const std::map<ObjectId, Object> objects = dataPoint.second;
 
-            if (draw_display) {
+            if (draw_display_) {
                 draw(objects, frame);
             }
 
             outputToFile(objects, frame.getTimestamp());
 
-            if (logging_enabled) {
+            if (logging_enabled_) {
                 std::cout << "timestamp: " << frame.getTimestamp()
-                          << " pfps: " << getProcessingFrameRate()
                           << " objects: " << objects.size() << std::endl;
             }
         }
     }
 
+    unsigned int getFramesWithObjects() const {
+        return frames_with_objects_;
+    }
+
+    double getFramesWithObjectsPercent() {
+        return (static_cast<double>(frames_with_objects_) / processed_frames_) * 100;
+    }
+
     void reset() override {
         std::lock_guard<std::mutex> lg(mtx);
-        process_last_ts = 0;
-        process_fps = 0;
-        start = std::chrono::system_clock::now();
-        processed_frames = 0;
-        frames_with_faces = 0;
-        results.clear();
+        process_last_ts_ = 0;
+        start_ = std::chrono::system_clock::now();
+        processed_frames_ = 0;
+        frames_with_objects_ = 0;
+        results_.clear();
     }
 
 private:
     std::map<Feature, Duration> callback_intervals_;
     std::vector<CabinRegion> cabin_regions_;
+    bool draw_object_id_;
+    unsigned int frames_with_objects_;
 };

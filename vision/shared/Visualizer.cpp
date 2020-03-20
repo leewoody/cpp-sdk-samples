@@ -1,8 +1,10 @@
 #include "Visualizer.h"
 #include "AffectivaLogo.h"
+#include "PlottingObjectListener.h"
 
 #include <opencv2/highgui/highgui.hpp>
 #include <iomanip>
+#include <utility>
 #include <Face.h>
 
 using namespace affdex::vision;
@@ -79,7 +81,7 @@ Visualizer::Visualizer() :
     };
 }
 
-void Visualizer::drawFaceMetrics(Face face, std::vector<Point> bounding_box, bool draw_face_id) {
+void Visualizer::drawFaceMetrics(affdex::vision::Face face, std::vector<Point> bounding_box, bool draw_face_id) {
     //Draw Right side metrics
     int padding = bounding_box[0].y; //Top left Y
 
@@ -149,7 +151,7 @@ void Visualizer::drawFaceMetrics(Face face, std::vector<Point> bounding_box, boo
              true);
 }
 
-void Visualizer::updateImage(cv::Mat output_img) {
+void Visualizer::updateImage(const cv::Mat& output_img) {
     img = output_img;
 
     if (!logo_resized) {
@@ -162,8 +164,8 @@ void Visualizer::updateImage(cv::Mat output_img) {
     overlayImage(logo, roi, cv::Point(0, 0));
 }
 
-void Visualizer::drawPoints(std::map<FacePoint, Point> points) {
-    for (auto& point : points)    //Draw face feature points.
+void Visualizer::drawPoints(const std::map<FacePoint, Point>& points) {
+    for (const auto& point : points)    //Draw face feature points.
     {
         cv::circle(img, cv::Point(point.second.x, point.second.y), 2.0f, cv::Scalar(255, 255, 255));
     }
@@ -180,7 +182,7 @@ void Visualizer::drawBoundingBox(const std::vector<Point>& bounding_box, float v
     }
 }
 
-void Visualizer::drawBoundingBox(const std::vector<Point>& bounding_box, cv::Scalar color) {
+void Visualizer::drawBoundingBox(const std::vector<Point>& bounding_box, const cv::Scalar& color) {
     if (!bounding_box.empty()) {
         //Draw bounding box
         cv::Point top_left(bounding_box[0].x, bounding_box[0].y);
@@ -190,19 +192,19 @@ void Visualizer::drawBoundingBox(const std::vector<Point>& bounding_box, cv::Sca
     }
 }
 
-void Visualizer::drawPolygon(const std::vector<Point>& points, cv::Scalar color) {
+void Visualizer::drawPolygon(const std::vector<Point>& points, const cv::Scalar& color) {
     if (!points.empty()) {
         //Draw polygon
         std::vector<cv::Point> pts;
         for (const auto& p: points) {
-            pts.push_back(cv::Point(p.x, p.y));
+            pts.emplace_back(cv::Point(p.x, p.y));
         }
         cv::polylines(img, pts, true, color, 3);
     }
 }
 
 void Visualizer::drawText(const std::string& name, const std::string& value,
-                          const cv::Point2f loc, bool align_right, cv::Scalar color, cv::Scalar bg_color) {
+                          const cv::Point2f& loc, bool align_right, cv::Scalar color, cv::Scalar bg_color) {
     const int block_width = 8;
     const int margin = 2;
     const int block_size = 10;
@@ -217,8 +219,8 @@ void Visualizer::drawText(const std::string& name, const std::string& value,
         cv::Size txtSize = cv::getTextSize(label, cv::FONT_HERSHEY_SIMPLEX, 0.5f, 5, &baseline);
         display_loc.x -= txtSize.width;
     }
-    cv::putText(img, label + value, display_loc, cv::FONT_HERSHEY_SIMPLEX, 0.5f, bg_color, 5);
-    cv::putText(img, label + value, display_loc, cv::FONT_HERSHEY_SIMPLEX, 0.5f, color, 1);
+    cv::putText(img, label + value, display_loc, cv::FONT_HERSHEY_SIMPLEX, 0.5f, std::move(bg_color), 5);
+    cv::putText(img, label + value, display_loc, cv::FONT_HERSHEY_SIMPLEX, 0.5f, std::move(color), 1);
 }
 
 void Visualizer::drawOccupantMetrics(const affdex::vision::Occupant& occupant) {
@@ -235,7 +237,7 @@ void Visualizer::drawOccupantMetrics(const affdex::vision::Occupant& occupant) {
     int padding = occupant.boundingBox.getTopLeft().y; //Top left Y
 
     const std::string id(std::to_string(occupant.matchedSeat.cabinRegion.id));
-    const std::string region_type(occupant.matchedSeat.cabinRegion.typeToString(occupant.matchedSeat.cabinRegion.type));
+    const std::string region_type(affdex::vision::CabinRegion::typeToString(occupant.matchedSeat.cabinRegion.type));
     const std::string match_confidence(std::to_string(occupant.matchedSeat.matchConfidence));
 
     drawText("Confidence", match_confidence, cv::Point(occupant.boundingBox.getTopLeft().x, padding -= spacing),
@@ -243,11 +245,22 @@ void Visualizer::drawOccupantMetrics(const affdex::vision::Occupant& occupant) {
     drawText("Region " + id, region_type, cv::Point(occupant.boundingBox.getTopLeft().x, padding -= spacing), false);
 }
 
-void Visualizer::drawObjectMetrics(const affdex::vision::Object& object, const cv::Scalar& color, const std::string&
-type) {
+void Visualizer::drawObjectMetrics(const affdex::vision::Object& object) {
 
     // Draw object bounding box
     auto bbox = {object.boundingBox.getTopLeft(), object.boundingBox.getBottomRight()};
+
+    //default color ==GRAY
+    cv::Scalar color(128, 128, 128);
+    if (object.type == Object::Type::PHONE) {
+        //phone color == YELLOW
+        color = {0, 255, 255};
+    }
+    else if (object.type == Object::Type::CHILD_SEAT) {
+        //child seat color == RED
+        color = {0, 0, 255};
+    }
+
     //Configured area region;
     drawBoundingBox(bbox, color);
 
@@ -257,11 +270,14 @@ type) {
 
     int padding = object.boundingBox.getTopLeft().y; //Top left Y
 
-    drawText("Type", type, cv::Point(object.boundingBox.getTopLeft().x, padding -= spacing), false);
+    drawText("Type", PlottingObjectListener::typeToString(object.type), cv::Point(object.boundingBox.getTopLeft().x,
+                                                                                  padding -=
+                                                                                      spacing),
+             false);
 
     const std::string id(std::to_string(object.matchedRegions[0].cabinRegion.id));
     const std::string
-        region_type(object.matchedRegions[0].cabinRegion.typeToString(object.matchedRegions[0].cabinRegion.type));
+        region_type(affdex::vision::CabinRegion::typeToString(object.matchedRegions[0].cabinRegion.type));
 
     const std::string match_confidence(std::to_string(object.confidence));
 
@@ -299,7 +315,7 @@ void Visualizer::drawClassifierOutput(const std::string& classifier,
 }
 
 void Visualizer::drawEqualizer(const std::string& name, const float value, const cv::Point2f& loc,
-                               bool align_right, cv::Scalar color) {
+                               bool align_right, const cv::Scalar& color) {
     const int block_width = 8;
     const int block_height = 10;
     const int margin = 2;
@@ -326,8 +342,8 @@ void Visualizer::drawEqualizer(const std::string& name, const float value, const
             alpha = 0.3;
             scalar_clr = cv::Scalar(186, 186, 186);
         }
-        cv::Mat color(roi.size(), CV_8UC3, scalar_clr);
-        cv::addWeighted(color, alpha, roi, 1.0 - alpha, 0.0, roi);
+        cv::Mat color1(roi.size(), CV_8UC3, scalar_clr);
+        cv::addWeighted(color1, alpha, roi, 1.0 - alpha, 0.0, roi);
 
         i += align_right ? -(margin + block_width) : (margin + block_width);
     }
@@ -342,7 +358,7 @@ void Visualizer::drawEqualizer(const std::string& name, const float value, const
 }
 
 void Visualizer::drawHeadOrientation(std::map<Measurement, float> headAngles, const int x, int& padding,
-                                     bool align_right, cv::Scalar color) {
+                                     bool align_right, const cv::Scalar& color) {
     std::stringstream ss;
     ss << std::fixed << std::setw(3) << std::setprecision(1);
     for (auto& h: HEAD_ANGLES) {
@@ -361,7 +377,7 @@ cv::Mat Visualizer::getImageData() {
     return img;
 }
 
-void Visualizer::overlayImage(const cv::Mat& foreground, cv::Mat& background, cv::Point2i location) {
+void Visualizer::overlayImage(const cv::Mat& foreground, cv::Mat& background, const cv::Point2i& location) {
 
     // start at the row indicated by location, or at row 0 if location.y is negative.
     for (int y = (std::max)(location.y, 0); y < background.rows; ++y) {

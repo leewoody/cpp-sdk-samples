@@ -10,119 +10,120 @@ class PlottingImageListener : public vision::ImageListener, public PlottingListe
 public:
 
     PlottingImageListener(std::ofstream& csv, bool draw_display, bool enable_logging, bool draw_face_id) :
-        PlottingListener(csv, draw_display, enable_logging, draw_face_id), capture_last_ts(0), capture_fps(0) {
-        out_stream << "TimeStamp,faceId,upperLeftX,upperLeftY,lowerRightX,lowerRightY,confidence,interocularDistance,";
-        for (const auto& angle : viz.HEAD_ANGLES) {
-            out_stream << angle.second << ",";
+        PlottingListener(csv, draw_display, enable_logging), capture_last_ts_(0), process_fps_(0), capture_fps_(0),
+        draw_face_id_(draw_face_id) {
+        out_stream_ << "TimeStamp,faceId,upperLeftX,upperLeftY,lowerRightX,lowerRightY,confidence,interocularDistance,";
+        for (const auto& angle : viz_.HEAD_ANGLES) {
+            out_stream_ << angle.second << ",";
         }
-        for (const auto& emotion : viz.EMOTIONS) {
-            out_stream << emotion.second << ",";
+        for (const auto& emotion : viz_.EMOTIONS) {
+            out_stream_ << emotion.second << ",";
         }
-        for (const auto& expression : viz.EXPRESSIONS) {
-            out_stream << expression.second << ",";
+        for (const auto& expression : viz_.EXPRESSIONS) {
+            out_stream_ << expression.second << ",";
         }
-        out_stream << "mood,dominantEmotion,dominantEmotionConfidence,";
-        out_stream << "identity,identityConfidence,age,ageConfidence,ageCategory";
-        out_stream << std::endl;
-        out_stream.precision(2);
-        out_stream << std::fixed;
+        out_stream_ << "mood,dominantEmotion,dominantEmotionConfidence,";
+        out_stream_ << "identity,identityConfidence,age,ageConfidence,ageCategory";
+        out_stream_ << std::endl;
+        out_stream_.precision(2);
+        out_stream_ << std::fixed;
     }
 
     unsigned int getCaptureFrameRate() {
         std::lock_guard<std::mutex> lg(mtx);
-        return capture_fps;
+        return capture_fps_;
     }
 
     void onImageResults(std::map<vision::FaceId, vision::Face> faces, vision::Frame image) override {
         std::lock_guard<std::mutex> lg(mtx);
-        results.emplace_back(image, faces);
-        process_fps = 1000.0f / (image.getTimestamp() - process_last_ts);
-        process_last_ts = image.getTimestamp();
+        results_.emplace_back(image, faces);
+        process_fps_ = 1000.0f / (image.getTimestamp() - process_last_ts_);
+        process_last_ts_ = image.getTimestamp();
 
-        processed_frames++;
+        processed_frames_++;
         if (faces.size() > 0) {
-            frames_with_faces++;
+            frames_with_faces_++;
         }
     };
 
     void onImageCapture(vision::Frame image) override {
         std::lock_guard<std::mutex> lg(mtx);
-        capture_fps = 1000.0f / (image.getTimestamp() - capture_last_ts);
-        capture_last_ts = image.getTimestamp();
+        capture_fps_ = 1000.0f / (image.getTimestamp() - capture_last_ts_);
+        capture_last_ts_ = image.getTimestamp();
     };
 
     void outputToFile(const std::map<vision::FaceId, vision::Face>& faces, double time_stamp) override {
         if (faces.empty()) {
-            out_stream << time_stamp
-                       << ",nan,nan,nan,nan,nan,nan,nan,"; // face ID, bbox UL X, UL Y, BR X, BR Y, confidence, interocular distance
-            for (const auto& angle : viz.HEAD_ANGLES) {
-                out_stream << "nan,";
+            out_stream_ << time_stamp
+                        << ",nan,nan,nan,nan,nan,nan,nan,"; // face ID, bbox UL X, UL Y, BR X, BR Y, confidence, interocular distance
+            for (const auto& angle : viz_.HEAD_ANGLES) {
+                out_stream_ << "nan,";
             }
-            for (const auto& emotion : viz.EMOTIONS) {
-                out_stream << "nan,";
+            for (const auto& emotion : viz_.EMOTIONS) {
+                out_stream_ << "nan,";
             }
-            for (const auto& expression : viz.EXPRESSIONS) {
-                out_stream << "nan,";
+            for (const auto& expression : viz_.EXPRESSIONS) {
+                out_stream_ << "nan,";
             }
-            out_stream
+            out_stream_
                 << "nan,nan,nan,nan,nan,nan,nan,nan"; // mood, dominant emotion, dominant emotion confidence, identity, identity_confidence, age, age_confidence, age_category
-            out_stream << std::endl;
+            out_stream_ << std::endl;
         }
 
         for (const auto& face_id_pair : faces) {
             vision::Face f = face_id_pair.second;
             std::vector<vision::Point> bbox(f.getBoundingBox());
 
-            out_stream << time_stamp << ","
-                       << f.getId() << ","
-                       << std::setprecision(0) << bbox[0].x << "," << bbox[0].y << "," << bbox[1].x << "," << bbox[1].y
-                       << "," << std::setprecision(4)
-                       << f.getConfidence() << ","
-                       << f.getMeasurements().at(vision::Measurement::INTEROCULAR_DISTANCE) << ",";
+            out_stream_ << time_stamp << ","
+                        << f.getId() << ","
+                        << std::setprecision(0) << bbox[0].x << "," << bbox[0].y << "," << bbox[1].x << "," << bbox[1].y
+                        << "," << std::setprecision(4)
+                        << f.getConfidence() << ","
+                        << f.getMeasurements().at(vision::Measurement::INTEROCULAR_DISTANCE) << ",";
 
             auto measurements = f.getMeasurements();
-            for (auto m : viz.HEAD_ANGLES) {
-                out_stream << measurements.at(m.first) << ",";
+            for (auto m : viz_.HEAD_ANGLES) {
+                out_stream_ << measurements.at(m.first) << ",";
             }
 
             auto emotions = f.getEmotions();
-            for (auto emo : viz.EMOTIONS) {
-                out_stream << emotions.at(emo.first) << ",";
+            for (auto emo : viz_.EMOTIONS) {
+                out_stream_ << emotions.at(emo.first) << ",";
             }
 
             auto expressions = f.getExpressions();
-            for (auto exp : viz.EXPRESSIONS) {
-                out_stream << expressions.at(exp.first) << ",";
+            for (auto exp : viz_.EXPRESSIONS) {
+                out_stream_ << expressions.at(exp.first) << ",";
             }
 
             vision::Mood mood = f.getMood();
-            out_stream << viz.MOODS[mood] << ",";
+            out_stream_ << viz_.MOODS[mood] << ",";
 
             vision::DominantEmotionMetric dominant_emotion_metric = f.getDominantEmotion();
-            out_stream << viz.DOMINANT_EMOTIONS[dominant_emotion_metric.dominantEmotion] << ","
-                       << dominant_emotion_metric.confidence << ",";
+            out_stream_ << viz_.DOMINANT_EMOTIONS[dominant_emotion_metric.dominantEmotion] << ","
+                        << dominant_emotion_metric.confidence << ",";
 
             auto identity_metric = f.getIdentityMetric();
             std::string id_content;
             identity_metric.id == -1 ? id_content = "UNKNOWN" : id_content = std::to_string(identity_metric.id);
-            out_stream << id_content << "," << identity_metric.confidence << ",";
+            out_stream_ << id_content << "," << identity_metric.confidence << ",";
 
             auto age_metric = f.getAgeMetric();
             std::string age_content;
             age_metric.years == -1 ? age_content = "UNKNOWN" : age_content = std::to_string(age_metric.years);
-            out_stream << age_content << "," << age_metric.confidence << ",";
+            out_stream_ << age_content << "," << age_metric.confidence << ",";
 
             auto age_category = f.getAgeCategory();
-            out_stream << viz.AGE_CATEGORIES.at(age_category);
+            out_stream_ << viz_.AGE_CATEGORIES.at(age_category);
 
-            out_stream << std::endl;
+            out_stream_ << std::endl;
         }
     }
 
     void draw(const std::map<vision::FaceId, vision::Face>& faces, const vision::Frame& image) override {
         std::shared_ptr<unsigned char> imgdata = image.getBGRByteArray();
         const cv::Mat img = cv::Mat(image.getHeight(), image.getWidth(), CV_8UC3, imgdata.get());
-        viz.updateImage(img);
+        viz_.updateImage(img);
 
         for (const auto& face_id_pair : faces) {
             vision::Face f = face_id_pair.second;
@@ -132,17 +133,17 @@ public:
             // Draw bounding box
             auto bbox = f.getBoundingBox();
             const float valence = f.getEmotions().at(vision::Emotion::VALENCE);
-            viz.drawBoundingBox(bbox, valence);
+            viz_.drawBoundingBox(bbox, valence);
 
             // Draw Facial Landmarks Points
-            viz.drawPoints(f.getFacePoints());
+            viz_.drawPoints(f.getFacePoints());
 
             // Draw a face on screen
-            viz.drawFaceMetrics(f, bbox, draw_face_id);
+            viz_.drawFaceMetrics(f, bbox, draw_face_id_);
         }
 
-        viz.showImage();
-        image_data = viz.getImageData();
+        viz_.showImage();
+        image_data_ = viz_.getImageData();
     }
 
     void processResults() override {
@@ -151,13 +152,13 @@ public:
             vision::Frame frame = dataPoint.first;
             const std::map<vision::FaceId, vision::Face> faces = dataPoint.second;
 
-            if (draw_display) {
+            if (draw_display_) {
                 draw(faces, frame);
             }
 
             outputToFile(faces, frame.getTimestamp());
 
-            if (logging_enabled) {
+            if (logging_enabled_) {
                 std::cout << "timestamp: " << frame.getTimestamp()
                           << " cfps: " << getCaptureFrameRate()
                           << " pfps: " << getProcessingFrameRate()
@@ -166,19 +167,35 @@ public:
         }
     }
 
+    unsigned int getFramesWithFaces() {
+        return frames_with_faces_;
+    }
+
+    double getFramesWithFacesPercent() {
+        return (static_cast<double>(frames_with_faces_) / processed_frames_) * 100;
+    }
+
+    unsigned int getProcessingFrameRate() {
+        std::lock_guard<std::mutex> lg(mtx);
+        return process_fps_;
+    }
+
     void reset() override {
         std::lock_guard<std::mutex> lg(mtx);
-        capture_last_ts = 0;
-        capture_fps = 0;
-        process_last_ts = 0;
-        process_fps = 0;
-        start = std::chrono::system_clock::now();
-        processed_frames = 0;
-        frames_with_faces = 0;
-        results.clear();
+        capture_last_ts_ = 0;
+        capture_fps_ = 0;
+        process_last_ts_ = 0;
+        process_fps_ = 0;
+        start_ = std::chrono::system_clock::now();
+        processed_frames_ = 0;
+        frames_with_faces_ = 0;
+        results_.clear();
     }
 
 private:
-    Timestamp capture_last_ts;
-    unsigned int capture_fps;
+    Timestamp capture_last_ts_;
+    unsigned int process_fps_;
+    unsigned int capture_fps_;
+    bool draw_face_id_;
+    unsigned int frames_with_faces_;
 };

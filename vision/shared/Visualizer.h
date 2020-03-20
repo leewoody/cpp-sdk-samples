@@ -16,12 +16,12 @@ public:
     /** @brief UpdateImage refreshes the image that will be update
     * @param output_img  -- The image to display output on
     */
-    void updateImage(cv::Mat output_img);
+    void updateImage(const cv::Mat& output_img);
 
     /** @brief DrawPoints displays the landmark points on the image
     * @param points  -- The landmark points
     */
-    void drawPoints(std::map<affdex::vision::FacePoint, affdex::vision::Point> points);
+    void drawPoints(const std::map<affdex::vision::FacePoint, affdex::vision::Point>& points);
 
     /** @brief DrawBoundingBox displays the bounding box
     * @param top_left      -- The top left point
@@ -35,14 +35,14 @@ public:
     * @param bottom_right -- The bottom right point
     * @param color        -- Bounding box's color
     */
-    void drawBoundingBox(const std::vector<affdex::vision::Point>& bounding_box, cv::Scalar color);
+    void drawBoundingBox(const std::vector<affdex::vision::Point>& bounding_box, const cv::Scalar& color);
 
     /**
      * @brief drawPolygon displays the polygon
      * @param points    -- The points are used to draw the polygon
      * @param color     -- The polygon's color
      */
-    void drawPolygon(const std::vector<affdex::vision::Point>& points, cv::Scalar color);
+    void drawPolygon(const std::vector<affdex::vision::Point>& points, const cv::Scalar& color);
 
     /** @brief DrawHeadOrientation Displays head orientation and associated value
     * @param name        -- Name of the classifier
@@ -53,7 +53,7 @@ public:
     * @param color       -- Color
     */
     void drawHeadOrientation(std::map<affdex::vision::Measurement, float> headAngles, const int x, int& padding,
-                             bool align_right = true, cv::Scalar color = cv::Scalar(255, 255, 255));
+                             bool align_right = true, const cv::Scalar& color = cv::Scalar(255, 255, 255));
 
     /** @brief DrawFaceMetrics Displays all facial metrics and associated value
     * @param face         -- The affdex::Face object to display
@@ -74,9 +74,8 @@ public:
      * @brief Draw object related metrics
      * @param object    -- object
      * @param color     -- Color used to draw some metrics
-     * @param type      -- The type of object
      */
-    void drawObjectMetrics(const affdex::vision::Object& object, const cv::Scalar& color, const std::string& type);
+    void drawObjectMetrics(const affdex::vision::Object& object);
 
     /**
      * @brief ShowImage displays image on screen for interval
@@ -106,7 +105,7 @@ private:
     * @param background - background image
     * @param location   - location on the background image where the foreground image should be placed
     */
-    void overlayImage(const cv::Mat& foreground, cv::Mat& background, cv::Point2i location);
+    void overlayImage(const cv::Mat& foreground, cv::Mat& background, const cv::Point2i& location);
 
     /** @brief DrawClassifierOutput Displays a classifier and associated value
     * @param name        -- Name of the classifier
@@ -127,7 +126,7 @@ private:
     * @param color       -- Color
     */
     void drawEqualizer(const std::string& name, const float value, const cv::Point2f& loc,
-                       bool align_right, cv::Scalar color);
+                       bool align_right, const cv::Scalar& color);
 
     /** @brief DrawText displays an text on screen either right or left justified at the anchor location (loc)
     * @param name        -- Name of the classifier
@@ -137,7 +136,7 @@ private:
     * @param color       -- Color
     */
     void drawText(const std::string& name, const std::string& value,
-                  const cv::Point2f loc, bool align_right = false, cv::Scalar color = cv::Scalar(255, 255, 255),
+                  const cv::Point2f& loc, bool align_right = false, cv::Scalar color = cv::Scalar(255, 255, 255),
                   cv::Scalar bg_color = cv::Scalar(50, 50, 50));
 
     std::set<std::string> GREEN_COLOR_CLASSIFIERS;

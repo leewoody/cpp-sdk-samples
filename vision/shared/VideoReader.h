@@ -8,7 +8,7 @@
 
 class VideoReader {
 public:
-    VideoReader(const boost::filesystem::path& file_path, const unsigned int sampling_frame_rate);
+    VideoReader(const boost::filesystem::path& file_path, unsigned int sampling_frame_rate);
 
     bool GetFrame(cv::Mat& bgr_frame, affdex::Timestamp& timestamp_ms);
     bool GetFrameData(cv::Mat& bgr_frame, affdex::Timestamp& timestamp_ms);
