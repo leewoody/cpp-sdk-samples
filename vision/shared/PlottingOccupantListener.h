@@ -79,7 +79,13 @@ public:
         viz_.updateImage(img);
 
         for (const auto& id_occupant_pair : occupants) {
-            viz_.drawOccupantMetrics(id_occupant_pair.second);
+            const auto occupant =  id_occupant_pair.second;
+            viz_.drawOccupantMetrics(occupant);
+            //add occupant region detected
+            const auto id = occupant.matchedSeat.cabinRegion.id;
+            if(std::find(occupant_regions_.begin(), occupant_regions_.end(), id) == occupant_regions_.end()) {
+                occupant_regions_.emplace_back(id);
+            }
         }
 
         viz_.showImage();
@@ -105,12 +111,20 @@ public:
         }
     }
 
-    unsigned int getFramesWithOccupants() const {
-        return frames_with_occupants_;
+
+    double getSamplesWithOccupantsPercent() {
+        return (static_cast<double>(frames_with_occupants_) / processed_frames_) * 100;
     }
 
-    double getFramesWithOccupantsPercent() {
-        return (static_cast<double>(frames_with_occupants_) / processed_frames_) * 100;
+    std::string getOccupantRegionsDetected() const {
+        std::string occupant_regions;
+        for(int i = 0; i<occupant_regions_.size(); ++i){
+            if(i>0){
+                occupant_regions += ", ";
+            }
+            occupant_regions += std::to_string(occupant_regions_[i]);
+        }
+        return occupant_regions;
     }
 
     void reset() override {
@@ -125,6 +139,7 @@ public:
 private:
     Duration callback_interval_;
     std::vector<CabinRegion> cabin_regions_;
+    std::vector<int> occupant_regions_;
     bool draw_occupant_id_;
     unsigned int frames_with_occupants_;
 };

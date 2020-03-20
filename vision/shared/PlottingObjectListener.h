@@ -104,7 +104,20 @@ public:
         viz_.updateImage(img);
 
         for (const auto& id_object_pair : objects) {
-            viz_.drawObjectMetrics(id_object_pair.second);
+            const auto obj = id_object_pair.second;
+            viz_.drawObjectMetrics(obj);
+            //add object region detected
+            for(const auto& o : obj.matchedRegions){
+                const auto id = o.cabinRegion.id;
+                if(std::find(object_regions_.begin(), object_regions_.end(), id) == object_regions_.end()) {
+                    object_regions_.emplace_back(id);
+                }
+            }
+
+            //add object type detected
+            if(std::find(object_types_.begin(), object_types_.end(), obj.type) == object_types_.end()) {
+                object_types_.emplace_back(obj.type);
+            }
         }
 
         viz_.showImage();
@@ -130,12 +143,39 @@ public:
         }
     }
 
-    unsigned int getFramesWithObjects() const {
-        return frames_with_objects_;
+    double getSamplesWithObjectsPercent() {
+        return (static_cast<double>(frames_with_objects_) / processed_frames_) * 100;
     }
 
-    double getFramesWithObjectsPercent() {
-        return (static_cast<double>(frames_with_objects_) / processed_frames_) * 100;
+    std::string getObjectTypesDetected() const {
+        std::string obj_types;
+        for(int i = 0; i<object_types_.size(); ++i){
+            if(i>0){
+                obj_types += ", ";
+            }
+            obj_types += typeToString(object_types_[i]);
+        }
+        return obj_types;
+    }
+
+    std::string getObjectRegionsDetected() const {
+        std::string object_regions;
+        for(int i = 0; i<object_regions_.size(); ++i){
+            if(i>0){
+                object_regions += ", ";
+            }
+            object_regions += std::to_string(object_regions_[i]);
+        }
+        return object_regions;
+    }
+
+    std::string getCallBackInterval() {
+        if(object_types_.empty()) {
+            return {};
+        }
+        else {
+            return std::to_string(callback_intervals_.begin()->second)+"ms";
+        }
     }
 
     void reset() override {
@@ -150,6 +190,8 @@ public:
 private:
     std::map<Feature, Duration> callback_intervals_;
     std::vector<CabinRegion> cabin_regions_;
+    std::vector<Object::Type> object_types_;
+    std::vector<int> object_regions_;
     bool draw_object_id_;
     unsigned int frames_with_objects_;
 };

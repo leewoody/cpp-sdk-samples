@@ -119,11 +119,13 @@ void processObjectVideo(vision::SyncFrameDetector& detector, std::ofstream& csv_
             }
         }
 
-        cout << "******************************************************************" << endl
-             << "Processed Frame count: " << object_listener.getProcessedFrames() << endl
-             << "Frames w/objects: " << object_listener.getFramesWithObjects() << endl
-             << "Percent of frames w/objects: " << object_listener.getFramesWithObjectsPercent() << "%" << endl
-             << "******************************************************************" << endl;
+        cout << "******************************************************************\n"
+             << "Percent of samples w/objects present: " << object_listener.getSamplesWithObjectsPercent() << "%"
+             << endl
+             << "Object types detected: " << object_listener.getObjectTypesDetected() << endl
+             << "Objects detected in regions " << object_listener.getObjectRegionsDetected() << endl
+             << "Object callback interval: " << object_listener.getCallBackInterval() << endl
+             << "******************************************************************\n";
 
         detector.reset();
         object_listener.reset();
@@ -166,11 +168,12 @@ void processOccupantVideo(vision::SyncFrameDetector& detector, std::ofstream& cs
             }
         }
 
-        cout << "******************************************************************" << endl
-             << "Processed Frame count: " << occupant_listener.getProcessedFrames() << endl
-             << "Frames w/occupants: " << occupant_listener.getFramesWithOccupants() << endl
-             << "Percent of frames w/occupants: " << occupant_listener.getFramesWithOccupantsPercent() << "%" << endl
-             << "******************************************************************" << endl;
+        cout << "******************************************************************\n"
+             << "Percent of samples w/occupants present: " << occupant_listener.getSamplesWithOccupantsPercent()
+             << "%\n"
+             << "Occupants detected in regions:  " << occupant_listener.getOccupantRegionsDetected() << endl
+             << "Occupant callback interval: " << occupant_listener.getCallbackInterval() << "ms\n"
+             << "******************************************************************\n";
 
         detector.reset();
         occupant_listener.reset();
@@ -214,11 +217,11 @@ void processFaceVideo(vision::SyncFrameDetector& detector,
             }
         }
 
-        cout << "******************************************************************" << endl
+        cout << "******************************************************************\n"
              << "Processed Frame count: " << image_listener.getProcessedFrames() << endl
              << "Frames w/faces: " << image_listener.getFramesWithFaces() << endl
-             << "Percent of frames w/faces: " << image_listener.getFramesWithFacesPercent() << "%" << endl
-             << "******************************************************************" << endl;
+             << "Percent of frames w/faces: " << image_listener.getFramesWithFacesPercent() << "%\n"
+             << "******************************************************************\n";
 
         detector.reset();
         image_listener.reset();
