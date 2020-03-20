@@ -24,7 +24,7 @@ namespace po = boost::program_options; // abbreviate namespace
 static const std::string DISPLAY_DATA_DIR_ENV_VAR = "AFFECTIVA_VISION_DATA_DIR";
 static const affdex::Str DATA_DIR_ENV_VAR = STR(DISPLAY_DATA_DIR_ENV_VAR);
 
-struct programOptions {
+struct ProgramOptions {
 
     enum DetectionType {
         FACE,
@@ -49,7 +49,7 @@ struct programOptions {
     DetectionType detection_type = FACE;
 };
 
-void assembleProgramOptions(po::options_description& description, programOptions& program_options) {
+void assembleProgramOptions(po::options_description& description, ProgramOptions& program_options) {
     const std::vector<int> DEFAULT_RESOLUTION{1280, 720};
 
     description.add_options()
@@ -92,8 +92,32 @@ void assembleProgramOptions(po::options_description& description, programOptions
         ("occupant", "Enable occupant detection");
 }
 
+bool processFrameFromWebcam(unique_ptr<vision::Detector>& frame_detector, ProgramOptions& program_options,
+                            cv::VideoCapture& webcam, const std::chrono::system_clock::time_point& start_time) {
+
+    cv::Mat img;
+    if (!webcam.read(img)) {   //Capture an image from the camera
+        std::cerr << "Failed to read frame from webcam\n";
+        return false;
+    }
+
+    const Timestamp ts = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now() - start_time).count();
+
+    // Create a Frame from the webcam image and process it with the Detector
+    const vision::Frame f(img.size().width, img.size().height, img.data, vision::Frame::ColorFormat::BGR, ts);
+    if (program_options.sync) {
+        dynamic_cast<vision::SyncFrameDetector*>(frame_detector.get())->process(f);
+    }
+    else {
+        dynamic_cast<vision::FrameDetector*>(frame_detector.get())->process(f);
+    }
+
+    return true;
+}
+
 void processFaceStream(unique_ptr<vision::Detector>& frame_detector, std::ofstream& csv_file_stream,
-                       programOptions program_options, StatusListener& status_listener, cv::VideoCapture& webcam) {
+                       ProgramOptions program_options, StatusListener& status_listener, cv::VideoCapture& webcam) {
 
     // prepare listeners
     PlottingImageListener image_listener(csv_file_stream, program_options.draw_display, !program_options
@@ -112,22 +136,8 @@ void processFaceStream(unique_ptr<vision::Detector>& frame_detector, std::ofstre
     frame_detector->start();
 
     do {
-        cv::Mat img;
-        if (!webcam.read(img)) {   //Capture an image from the camera
-            std::cerr << "Failed to read frame from webcam\n";
+        if (!processFrameFromWebcam(frame_detector, program_options, webcam, start_time)) {
             break;
-        }
-
-        Timestamp ts = std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::system_clock::now() - start_time).count();
-
-        // Create a Frame from the webcam image and process it with the Detector
-        const vision::Frame f(img.size().width, img.size().height, img.data, vision::Frame::ColorFormat::BGR, ts);
-        if (program_options.sync) {
-            dynamic_cast<vision::SyncFrameDetector*>(frame_detector.get())->process(f);
-        }
-        else {
-            dynamic_cast<vision::FrameDetector*>(frame_detector.get())->process(f);
         }
 
         image_listener.processResults();
@@ -144,7 +154,7 @@ void processFaceStream(unique_ptr<vision::Detector>& frame_detector, std::ofstre
 }
 
 void processObjectStream(unique_ptr<vision::Detector>& frame_detector, std::ofstream& csv_file_stream,
-                         programOptions program_options, StatusListener& status_listener, cv::VideoCapture& webcam) {
+                         ProgramOptions program_options, StatusListener& status_listener, cv::VideoCapture& webcam) {
 
     // prepare listeners
     PlottingObjectListener object_listener(csv_file_stream,
@@ -166,24 +176,9 @@ void processObjectStream(unique_ptr<vision::Detector>& frame_detector, std::ofst
     frame_detector->start();
 
     do {
-        cv::Mat img;
-        if (!webcam.read(img)) {   //Capture an image from the camera
-            std::cerr << "Failed to read frame from webcam\n";
+        if (!processFrameFromWebcam(frame_detector, program_options, webcam, start_time)) {
             break;
         }
-
-        Timestamp ts = std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::system_clock::now() - start_time).count();
-
-        // Create a Frame from the webcam image and process it with the Detector
-        const vision::Frame f(img.size().width, img.size().height, img.data, vision::Frame::ColorFormat::BGR, ts);
-        if (program_options.sync) {
-            dynamic_cast<vision::SyncFrameDetector*>(frame_detector.get())->process(f);
-        }
-        else {
-            dynamic_cast<vision::FrameDetector*>(frame_detector.get())->process(f);
-        }
-
         object_listener.processResults();
         //To save output video file
         if (program_options.write_video) {
@@ -199,7 +194,7 @@ void processObjectStream(unique_ptr<vision::Detector>& frame_detector, std::ofst
 
 void processOccupantStream(unique_ptr<vision::Detector>& frame_detector,
                            std::ofstream& csv_file_stream,
-                           programOptions program_options,
+                           ProgramOptions program_options,
                            StatusListener& status_listener,
                            cv::VideoCapture& webcam) {
 
@@ -219,22 +214,8 @@ void processOccupantStream(unique_ptr<vision::Detector>& frame_detector,
     frame_detector->start();
 
     do {
-        cv::Mat img;
-        if (!webcam.read(img)) {   //Capture an image from the camera
-            std::cerr << "Failed to read frame from webcam\n";
+        if (!processFrameFromWebcam(frame_detector, program_options, webcam, start_time)) {
             break;
-        }
-
-        Timestamp ts = std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::system_clock::now() - start_time).count();
-
-        // Create a Frame from the webcam image and process it with the Detector
-        const vision::Frame f(img.size().width, img.size().height, img.data, vision::Frame::ColorFormat::BGR, ts);
-        if (program_options.sync) {
-            dynamic_cast<vision::SyncFrameDetector*>(frame_detector.get())->process(f);
-        }
-        else {
-            dynamic_cast<vision::FrameDetector*>(frame_detector.get())->process(f);
         }
 
         occupant_listener.processResults();
@@ -261,7 +242,7 @@ int main(int argsc, char** argsv) {
         std::cout << std::fixed << std::setprecision(precision);
 
         //Gathering program options
-        programOptions program_options;
+        ProgramOptions program_options;
 
         po::options_description description
             ("Project for demoing the Affdex SDK Detector class (grabbing and processing frames from the camera).");
@@ -358,22 +339,22 @@ int main(int argsc, char** argsv) {
         StatusListener status_listener;
 
         // Connect to the webcam and configure it
-        cv::VideoCapture web_cam(program_options.camera_id);
+        cv::VideoCapture webcam(program_options.camera_id);
 
         // Note: not all webcams support these configuration properties
-        web_cam.set(CV_CAP_PROP_FPS, program_options.camera_framerate);
-        web_cam.set(CV_CAP_PROP_FRAME_WIDTH, program_options.resolution[0]);
-        web_cam.set(CV_CAP_PROP_FRAME_HEIGHT, program_options.resolution[1]);
+        webcam.set(CV_CAP_PROP_FPS, program_options.camera_framerate);
+        webcam.set(CV_CAP_PROP_FRAME_WIDTH, program_options.resolution[0]);
+        webcam.set(CV_CAP_PROP_FRAME_HEIGHT, program_options.resolution[1]);
 
         const auto start_time = std::chrono::system_clock::now();
-        if (!web_cam.isOpened()) {
+        if (!webcam.isOpened()) {
             std::cerr << "Error opening webcam\n";
             return 1;
         }
         //Setup video writer
         if (program_options.write_video) {
             cv::Mat mat;
-            if (!web_cam.read(mat)) {   //Capture an image from the camera
+            if (!webcam.read(mat)) {   //Capture an image from the camera
                 std::cerr << "Failed to read frame from webcam while setting up video writer\n";
                 return 1;
             }
@@ -389,13 +370,13 @@ int main(int argsc, char** argsv) {
         }
         switch (program_options.detection_type) {
             case program_options.OBJECT:
-                processObjectStream(frame_detector, csv_file_stream, program_options, status_listener, web_cam);
+                processObjectStream(frame_detector, csv_file_stream, program_options, status_listener, webcam);
                 break;
             case program_options.OCCUPANT:
-                processOccupantStream(frame_detector, csv_file_stream, program_options, status_listener, web_cam);
+                processOccupantStream(frame_detector, csv_file_stream, program_options, status_listener, webcam);
                 break;
             case program_options.FACE:
-                processFaceStream(frame_detector, csv_file_stream, program_options, status_listener, web_cam);
+                processFaceStream(frame_detector, csv_file_stream, program_options, status_listener, webcam);
                 break;
             default:
                 std::cerr << "This should never happen " << program_options.detection_type << std::endl;

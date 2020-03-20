@@ -24,7 +24,7 @@ using namespace affdex;
 namespace po = boost::program_options; // abbreviate namespace
 
 
-struct programOptions {
+struct ProgramOptions {
     enum DetectionType {
         FACE,
         OBJECT,
@@ -45,7 +45,7 @@ struct programOptions {
     DetectionType detection_type = FACE;
 };
 
-void assembleProgramOptions(po::options_description& description, programOptions& program_options) {
+void assembleProgramOptions(po::options_description& description, ProgramOptions& program_options) {
 
     description.add_options()
         ("help,h", po::bool_switch()->default_value(false), "Display this help message.")
@@ -80,7 +80,7 @@ void assembleProgramOptions(po::options_description& description, programOptions
 }
 
 void processObjectVideo(vision::SyncFrameDetector& detector, std::ofstream& csv_file_stream,
-                        programOptions& program_options) {
+                        ProgramOptions& program_options) {
 
     // configure the Detector by enabling features
     detector.enable({vision::Feature::CHILD_SEATS, vision::Feature::PHONES});
@@ -131,7 +131,7 @@ void processObjectVideo(vision::SyncFrameDetector& detector, std::ofstream& csv_
 }
 
 void processOccupantVideo(vision::SyncFrameDetector& detector, std::ofstream& csv_file_stream,
-                          programOptions& program_options) {
+                          ProgramOptions& program_options) {
 
     // configure the Detector by enabling features
     detector.enable(vision::Feature::OCCUPANTS);
@@ -179,7 +179,7 @@ void processOccupantVideo(vision::SyncFrameDetector& detector, std::ofstream& cs
 
 void processFaceVideo(vision::SyncFrameDetector& detector,
                       std::ofstream& csv_file_stream,
-                      programOptions program_options) {
+                      ProgramOptions program_options) {
     // configure the Detector by enabling features
     detector.enable({vision::Feature::EMOTIONS, vision::Feature::EXPRESSIONS, vision::Feature::IDENTITY,
                      vision::Feature::APPEARANCES});
@@ -233,7 +233,7 @@ int main(int argsc, char** argsv) {
     std::cout << std::fixed << std::setprecision(precision);
 
     //Gathering program options
-    programOptions program_options;
+    ProgramOptions program_options;
     po::options_description
         description("Project for demoing the Affectiva Detector class (processing video files).");
     assembleProgramOptions(description, program_options);
