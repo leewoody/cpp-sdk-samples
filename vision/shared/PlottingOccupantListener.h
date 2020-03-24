@@ -112,8 +112,8 @@ public:
     }
 
 
-    double getSamplesWithOccupantsPercent() {
-        return (static_cast<double>(frames_with_occupants_) / processed_frames_) * 100;
+    int getSamplesWithOccupantsPercent() {
+        return (static_cast<int>(frames_with_occupants_) / processed_frames_) * 100;
     }
 
     std::string getOccupantRegionsDetected() const {

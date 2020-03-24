@@ -171,8 +171,8 @@ public:
         return frames_with_faces_;
     }
 
-    double getFramesWithFacesPercent() {
-        return (static_cast<double>(frames_with_faces_) / processed_frames_) * 100;
+    int getFramesWithFacesPercent() {
+        return (static_cast<int>(frames_with_faces_) / processed_frames_) * 100;
     }
 
     unsigned int getProcessingFrameRate() {

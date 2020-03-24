@@ -143,8 +143,8 @@ public:
         }
     }
 
-    double getSamplesWithObjectsPercent() {
-        return (static_cast<double>(frames_with_objects_) / processed_frames_) * 100;
+    int getSamplesWithObjectsPercent() {
+        return (static_cast<int>(frames_with_objects_) / processed_frames_) * 100;
     }
 
     std::string getObjectTypesDetected() const {
