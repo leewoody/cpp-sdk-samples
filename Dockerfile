@@ -18,7 +18,7 @@
 #        affectiva-auto:v2.0-ics
 #
 # Then from the shell, run the following for the webcam demo:
-# $ /opt/testapp-artifact/build/vision/bin/frame-detector-webcam-demo -d $AUTO_SDK_DIR/data/vision
+# $ /opt/testapp-artifact/build/vision/bin/frame-detector-webcam-demo -d $AUTO_SDK_DIR/data
 #
 # Or, you can check the docker-compose.yml file for options to build and run using docker-compose (recommended)
 
@@ -49,6 +49,7 @@ ENV ARTIFACT_DIR /opt/testapp-artifact
 ENV AUTO_SDK_DIR $SRC_DIR/affectiva-ics-sdk-2.0.0
 ENV LD_LIBRARY_PATH $AUTO_SDK_DIR/lib
 ENV LD_PRELOAD /usr/lib/x86_64-linux-gnu/libopencv_core.so.2.4
+ENV AFFECTIVA_VISION_DATA_DIR $AUTO_SDK_DIR/data
 
 #################################
 ###### Clone Sample App Repo ######
