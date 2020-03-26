@@ -1,7 +1,7 @@
 # A Docker file to be used for building the sample applications for the Linux SDK Ubuntu 16.04
 #
 # build:
-# $ docker build --build-arg AFFECTIVA_AUTO_SDK_2_1_URL=$AFFECTIVA_AUTO_SDK_2_1_URL --build-arg BRANCH=$BRANCH --tag=affectiva-auto:v2.1-ics .
+# $ docker build --build-arg AFFECTIVA_AUTO_SDK_2_1_URL=$AFFECTIVA_AUTO_SDK_URL --build-arg BRANCH=$BRANCH --tag=affectiva-auto:v2.1-ics .
 #
 # the result will be an image that has the tar'ed artifact of the sample app and all of its dependencies installed
 #
@@ -49,6 +49,7 @@ ENV ARTIFACT_DIR /opt/testapp-artifact
 ENV AUTO_SDK_DIR $SRC_DIR/affectiva-ics-sdk-2.1.0
 ENV LD_LIBRARY_PATH $AUTO_SDK_DIR/lib
 ENV LD_PRELOAD /usr/lib/x86_64-linux-gnu/libopencv_core.so.2.4
+ENV AFFECTIVA_VISION_DATA_DIR $AUTO_SDK_DIR/data
 
 #################################
 ###### Clone Sample App Repo ######
@@ -71,7 +72,7 @@ RUN wget --quiet https://sourceforge.net/projects/boost/files/boost/1.63.0/boost
 
 #### DOWNLOAD AFFECTIVA AUTO SDK ####
 WORKDIR $SRC_DIR
-ARG AFFECTIVA_AUTO_SDK_2_1_URL
+ARG AFFECTIVA_AUTO_SDK_URL
 RUN mkdir -p $AUTO_SDK_DIR && cd $AUTO_SDK_DIR &&\
     wget --quiet $AFFECTIVA_AUTO_SDK_2_0_URL  &&\
     tar -xf affectiva-ics-sdk* && \
