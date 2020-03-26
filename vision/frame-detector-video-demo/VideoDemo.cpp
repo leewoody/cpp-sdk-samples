@@ -183,9 +183,9 @@ void processOccupantVideo(vision::SyncFrameDetector& detector, std::ofstream& cs
 void processFaceVideo(vision::SyncFrameDetector& detector,
                       std::ofstream& csv_file_stream,
                       ProgramOptions program_options) {
+
     // configure the Detector by enabling features
-    detector.enable({vision::Feature::EMOTIONS, vision::Feature::EXPRESSIONS, vision::Feature::IDENTITY,
-                     vision::Feature::APPEARANCES});
+    detector.enable({vision::Feature::EMOTIONS, vision::Feature::EXPRESSIONS});
 
     // prepare listeners
     PlottingImageListener image_listener(csv_file_stream, program_options.draw_display,
