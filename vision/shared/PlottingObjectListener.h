@@ -124,11 +124,12 @@ public:
         image_data_ = viz_.getImageData();
     }
 
+    using PlottingListener::processResults;  // make the overload taking a Frame arg visible
     void processResults() override {
         while (getDataSize() > 0) {
-            const std::pair<vision::Frame, std::map<ObjectId, Object>> dataPoint = getData();
-            vision::Frame frame = dataPoint.first;
-            const std::map<ObjectId, Object> objects = dataPoint.second;
+            latest_data_ = getData();
+            vision::Frame frame = latest_data_.first;
+            const auto objects = latest_data_.second;
 
             if (draw_display_) {
                 draw(objects, frame);

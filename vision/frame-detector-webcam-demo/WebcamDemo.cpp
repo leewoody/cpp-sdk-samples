@@ -234,6 +234,7 @@ void processOccupantStream(unique_ptr<vision::Detector>& frame_detector,
 int main(int argsc, char** argsv) {
 
     std::cout << "Hit ESCAPE key to exit app.." << endl;
+    unique_ptr<vision::Detector> frame_detector;
 
     try {
         //setting up output precision
@@ -324,7 +325,6 @@ int main(int argsc, char** argsv) {
         }
 
         // create the Detector
-        unique_ptr<vision::Detector> frame_detector;
         if (program_options.sync) {
             frame_detector = std::unique_ptr<vision::Detector>(new vision::SyncFrameDetector(program_options.data_dir,
                                                                                              program_options.num_faces));
@@ -390,8 +390,9 @@ int main(int argsc, char** argsv) {
             std::cout << "Output written to file" << program_options.output_file_path << std::endl;
         }
     }
-    catch (...) {
-        std::cerr << "Encountered an exception " << std::endl;
+    catch (std::exception& ex) {
+        StatusListener::printException(ex);
+        frame_detector->stop();
         return 1;
     }
 

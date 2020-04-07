@@ -27,7 +27,6 @@ public:
         return ret;
     };
 
-private:
     // prints the explanatory string of an exception. If the exception is nested,
     // recurses to print the explanatory string of the exception it holds
     static void printException(const std::exception& e, int level = 0) {
@@ -42,6 +41,7 @@ private:
         }
     }
 
+private:
     std::mutex m;
     bool is_running;
 };

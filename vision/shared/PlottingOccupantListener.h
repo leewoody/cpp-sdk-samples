@@ -91,12 +91,12 @@ public:
         viz_.showImage();
         image_data_ = viz_.getImageData();
     }
-
+    using PlottingListener::processResults; // make the overload taking a Frame arg visible
     void processResults() override {
         while (getDataSize() > 0) {
-            const std::pair<vision::Frame, std::map<vision::OccupantId, vision::Occupant>> dataPoint = getData();
-            vision::Frame frame = dataPoint.first;
-            const std::map<vision::OccupantId, vision::Occupant> occupants = dataPoint.second;
+            latest_data_ = getData();
+            vision::Frame frame = latest_data_.first;
+            const auto occupants = latest_data_.second;
 
             if (draw_display_) {
                 draw(occupants, frame);
@@ -110,7 +110,6 @@ public:
             }
         }
     }
-
 
     int getSamplesWithOccupantsPercent() {
         return (static_cast<int>(frames_with_occupants_) / processed_frames_) * 100;

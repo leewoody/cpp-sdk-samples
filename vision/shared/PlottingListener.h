@@ -53,6 +53,22 @@ public:
 
     virtual void reset() = 0;
 
+    void processResults(vision::Frame frame) {
+        if (getDataSize() > 0) {
+            processResults();
+        }
+        else {
+            if (draw_display_) {
+                if (frame.getTimestamp() - latest_data_.first.getTimestamp() < timeout_) {
+                    draw(latest_data_.second, frame);
+                }
+                else {
+                    draw({}, frame);
+                }
+            }
+        }
+    }
+
 protected:
     using frame_type_id_pair = std::pair<vision::Frame, std::map<vision::Id, T>>;
     std::ofstream& out_stream_;
@@ -67,4 +83,6 @@ protected:
     bool draw_display_;
     unsigned int processed_frames_;
     bool logging_enabled_;
+    frame_type_id_pair latest_data_;
+    Duration timeout_ = 500;
 };

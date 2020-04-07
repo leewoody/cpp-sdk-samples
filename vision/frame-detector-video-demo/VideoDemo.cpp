@@ -112,7 +112,7 @@ void processObjectVideo(vision::SyncFrameDetector& detector, std::ofstream& csv_
             vision::Frame
                 f(mat.size().width, mat.size().height, mat.data, vision::Frame::ColorFormat::BGR, timestamp_ms);
             detector.process(f);
-            object_listener.processResults();
+            object_listener.processResults(f);
             //To save output video file
             if (program_options.write_video) {
                 program_options.output_video << object_listener.getImageData();
@@ -161,7 +161,7 @@ void processOccupantVideo(vision::SyncFrameDetector& detector, std::ofstream& cs
             vision::Frame
                 f(mat.size().width, mat.size().height, mat.data, vision::Frame::ColorFormat::BGR, timestamp_ms);
             detector.process(f);
-            occupant_listener.processResults();
+            occupant_listener.processResults(f);
             //To save output video file
             if (program_options.write_video) {
                 program_options.output_video << occupant_listener.getImageData();
@@ -362,7 +362,7 @@ int main(int argsc, char** argsv) {
         std::cout << "Output written to file: " << csv_path << std::endl;
     }
     catch (std::exception& ex) {
-        std::cerr << ex.what();
+        StatusListener::printException(ex);
         // if video_reader couldn't load the video/image, it will throw. Since the detector was started before initializing the video_reader, We need to call `detector.stop()` to avoid crashing
         detector.stop();
         return 1;
