@@ -302,7 +302,7 @@ int main(int argsc, char** argsv) {
         return 1;
     }
     // create the Detector
-    vision::SyncFrameDetector detector = vision::SyncFrameDetector(program_options.data_dir);
+    vision::SyncFrameDetector detector = vision::SyncFrameDetector(program_options.data_dir, program_options.num_faces);
     try {
 
         //initialize the output file
