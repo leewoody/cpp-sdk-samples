@@ -63,7 +63,7 @@ void assembleProgramOptions(po::options_description& description, ProgramOptions
         ("output,o", po::value<affdex::Path>(&program_options.output_video_path), "Output video path.")
 #endif // _WIN32
         ("sfps",
-         po::value<unsigned int>(&program_options.sampling_frame_rate)->default_value(0),
+         po::value<unsigned int>(&program_options.sampling_frame_rate)->default_value(15),
          "Input sampling frame rate. Default is 0, which means the app will respect the video's FPS and read all frames")
         ("draw", po::value<bool>(&program_options.draw_display)->default_value(true), "Draw video on screen.")
         ("numFaces", po::value<unsigned int>(&program_options.num_faces)->default_value(1), "Number of faces to be "
@@ -182,7 +182,7 @@ void processOccupantVideo(vision::SyncFrameDetector& detector, std::ofstream& cs
 
 void processFaceVideo(vision::SyncFrameDetector& detector,
                       std::ofstream& csv_file_stream,
-                      ProgramOptions program_options) {
+                      ProgramOptions& program_options) {
     // configure the Detector by enabling features
     detector.enable({vision::Feature::EMOTIONS, vision::Feature::EXPRESSIONS, vision::Feature::IDENTITY,
                      vision::Feature::APPEARANCES});
@@ -325,7 +325,7 @@ int main(int argsc, char** argsv) {
             if (video_reader.GetFrame(mat, timestamp_ms)) {
                 program_options.output_video.open(program_options.output_video_path,
                                                   CV_FOURCC('D', 'X', '5', '0'),
-                                                  15,
+                                                  program_options.sampling_frame_rate,
                                                   cv::Size(mat.size().width, mat.size().height),
                                                   true);
                 if (!program_options.output_video.isOpened()) {

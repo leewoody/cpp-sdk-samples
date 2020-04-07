@@ -53,7 +53,7 @@ public:
 
     virtual void reset() = 0;
 
-    void processResults(vision::Frame frame) {
+    void processResults(vision::Frame& frame) {
         if (getDataSize() > 0) {
             processResults();
         }
