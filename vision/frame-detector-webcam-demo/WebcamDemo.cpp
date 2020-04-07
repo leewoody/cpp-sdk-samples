@@ -204,7 +204,7 @@ void processOccupantStream(unique_ptr<vision::Detector>& frame_detector,
 
 
     // configure the Detector by enabling features and assigning listeners
-    frame_detector->enable({vision::Feature::CHILD_SEATS, vision::Feature::PHONES});
+    frame_detector->enable(vision::Feature::OCCUPANTS);
     frame_detector->setOccupantListener(&occupant_listener);
     frame_detector->setProcessStatusListener(&status_listener);
 
