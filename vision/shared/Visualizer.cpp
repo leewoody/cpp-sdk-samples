@@ -279,7 +279,7 @@ void Visualizer::drawObjectMetrics(const affdex::vision::Object& object) {
     const std::string
         region_type(affdex::vision::CabinRegion::typeToString(object.matchedRegions[0].cabinRegion.type));
 
-    const std::string match_confidence(std::to_string(object.confidence));
+    const std::string match_confidence(std::to_string(object.matchedRegions[0].matchConfidence));
 
     drawText("Confidence",
              match_confidence,
