@@ -12,9 +12,9 @@ class PlottingObjectListener : public ObjectListener, public PlottingListener<Ob
 public:
 
     PlottingObjectListener(std::ofstream& csv, bool draw_display, bool enable_logging, bool draw_object_id,
-        const std::map<Feature, Duration>& callback_intervals, std::vector<CabinRegion> cabin_regions) :
-        PlottingListener(csv, draw_display, enable_logging), callback_intervals_(callback_intervals),
-        cabin_regions_(std::move(cabin_regions)), draw_object_id_(draw_object_id) {
+        std::map<Feature, Duration> callback_intervals, std::vector<CabinRegion> cabin_regions) :
+        PlottingListener(csv, draw_display, enable_logging), callback_intervals_(std::move(callback_intervals)),
+        cabin_regions_(std::move(cabin_regions)), draw_object_id_(draw_object_id), frames_with_objects_(0) {
         out_stream_ << "TimeStamp, objectId, confidence, upperLeftX, upperLeftY, lowerRightX, lowerRightY, ObjectType";
 
         for (const auto& cr :cabin_regions_) {
@@ -128,24 +128,15 @@ public:
     void processResults() override {
         while (getDataSize() > 0) {
             latest_data_ = getData();
-            vision::Frame frame = latest_data_.first;
+            drawRecentFrame();
+            vision::Frame old_frame = latest_data_.first;
             const auto objects = latest_data_.second;
-
-            if (draw_display_) {
-                draw(objects, frame);
-            }
-
-            outputToFile(objects, frame.getTimestamp());
-
-            if (logging_enabled_) {
-                std::cout << "timestamp: " << frame.getTimestamp()
-                          << " objects: " << objects.size() << std::endl;
-            }
+            outputToFile(objects, old_frame.getTimestamp());
         }
     }
 
-    int getSamplesWithObjectsPercent() {
-        return (static_cast<int>(frames_with_objects_) / processed_frames_) * 100;
+    int getSamplesWithObjectsPercent() const {
+        return (static_cast<float>(frames_with_objects_) / processed_frames_) * 100;
     }
 
     std::string getObjectTypesDetected() const {
@@ -194,5 +185,5 @@ private:
     std::vector<Object::Type> object_types_;
     std::vector<int> object_regions_;
     bool draw_object_id_;
-    unsigned int frames_with_objects_;
+    int frames_with_objects_;
 };
