@@ -12,7 +12,7 @@ public:
     PlottingOccupantListener(std::ofstream& csv, bool draw_display, bool enable_logging, bool draw_occupant_id, const
     Duration callback_interval, std::vector<CabinRegion> cabin_regions) :
         PlottingListener(csv, draw_display, enable_logging), callback_interval_(callback_interval),
-        cabin_regions_(std::move(cabin_regions)), draw_occupant_id_(draw_occupant_id) {
+        cabin_regions_(std::move(cabin_regions)), draw_occupant_id_(draw_occupant_id), frames_with_occupants_(0) {
         out_stream_ << "TimeStamp, occupantId, confidence, regionId,  upperLeftX, upperLeftY, lowerRightX, lowerRightY";
 
         for (const auto& cr :cabin_regions_) {
@@ -91,29 +91,19 @@ public:
         viz_.showImage();
         image_data_ = viz_.getImageData();
     }
-
+    using PlottingListener::processResults; // make the overload taking a Frame arg visible
     void processResults() override {
         while (getDataSize() > 0) {
-            const std::pair<vision::Frame, std::map<vision::OccupantId, vision::Occupant>> dataPoint = getData();
-            vision::Frame frame = dataPoint.first;
-            const std::map<vision::OccupantId, vision::Occupant> occupants = dataPoint.second;
-
-            if (draw_display_) {
-                draw(occupants, frame);
-            }
-
-            outputToFile(occupants, frame.getTimestamp());
-
-            if (logging_enabled_) {
-                std::cout << "timestamp: " << frame.getTimestamp()
-                          << " occupants: " << occupants.size() << std::endl;
-            }
+            latest_data_ = getData();
+            drawRecentFrame();
+            const vision::Frame old_frame = latest_data_.first;
+            const auto occupants = latest_data_.second;
+            outputToFile(occupants, old_frame.getTimestamp());
         }
     }
 
-
-    int getSamplesWithOccupantsPercent() {
-        return (static_cast<int>(frames_with_occupants_) / processed_frames_) * 100;
+    int getSamplesWithOccupantsPercent() const {
+        return (static_cast<float>(frames_with_occupants_) / processed_frames_) * 100;
     }
 
     std::string getOccupantRegionsDetected() const {
@@ -141,5 +131,5 @@ private:
     std::vector<CabinRegion> cabin_regions_;
     std::vector<int> occupant_regions_;
     bool draw_occupant_id_;
-    unsigned int frames_with_occupants_;
+    int frames_with_occupants_;
 };

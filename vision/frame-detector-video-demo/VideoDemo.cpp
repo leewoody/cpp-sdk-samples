@@ -63,7 +63,7 @@ void assembleProgramOptions(po::options_description& description, ProgramOptions
         ("output,o", po::value<affdex::Path>(&program_options.output_video_path), "Output video path.")
 #endif // _WIN32
         ("sfps",
-         po::value<unsigned int>(&program_options.sampling_frame_rate)->default_value(0),
+         po::value<unsigned int>(&program_options.sampling_frame_rate)->default_value(15),
          "Input sampling frame rate. Default is 0, which means the app will respect the video's FPS and read all frames")
         ("draw", po::value<bool>(&program_options.draw_display)->default_value(true), "Draw video on screen.")
         ("numFaces", po::value<unsigned int>(&program_options.num_faces)->default_value(1), "Number of faces to be "
@@ -112,7 +112,7 @@ void processObjectVideo(vision::SyncFrameDetector& detector, std::ofstream& csv_
             vision::Frame
                 f(mat.size().width, mat.size().height, mat.data, vision::Frame::ColorFormat::BGR, timestamp_ms);
             detector.process(f);
-            object_listener.processResults();
+            object_listener.processResults(f);
             //To save output video file
             if (program_options.write_video) {
                 program_options.output_video << object_listener.getImageData();
@@ -161,7 +161,7 @@ void processOccupantVideo(vision::SyncFrameDetector& detector, std::ofstream& cs
             vision::Frame
                 f(mat.size().width, mat.size().height, mat.data, vision::Frame::ColorFormat::BGR, timestamp_ms);
             detector.process(f);
-            occupant_listener.processResults();
+            occupant_listener.processResults(f);
             //To save output video file
             if (program_options.write_video) {
                 program_options.output_video << occupant_listener.getImageData();
@@ -182,7 +182,7 @@ void processOccupantVideo(vision::SyncFrameDetector& detector, std::ofstream& cs
 
 void processFaceVideo(vision::SyncFrameDetector& detector,
                       std::ofstream& csv_file_stream,
-                      ProgramOptions program_options) {
+                      ProgramOptions& program_options) {
     // configure the Detector by enabling features
     detector.enable({vision::Feature::EMOTIONS, vision::Feature::EXPRESSIONS, vision::Feature::IDENTITY,
                      vision::Feature::APPEARANCES});
@@ -301,9 +301,12 @@ int main(int argsc, char** argsv) {
         std::cerr << description << std::endl;
         return 1;
     }
-    // create the Detector
-    vision::SyncFrameDetector detector = vision::SyncFrameDetector(program_options.data_dir, program_options.num_faces);
+
+    std::shared_ptr<vision::SyncFrameDetector> detector;
+
     try {
+        // create the Detector
+        detector = std::make_shared<vision::SyncFrameDetector>(program_options.data_dir, program_options.num_faces);
 
         //initialize the output file
         std::string
@@ -325,7 +328,7 @@ int main(int argsc, char** argsv) {
             if (video_reader.GetFrame(mat, timestamp_ms)) {
                 program_options.output_video.open(program_options.output_video_path,
                                                   CV_FOURCC('D', 'X', '5', '0'),
-                                                  15,
+                                                  program_options.sampling_frame_rate,
                                                   cv::Size(mat.size().width, mat.size().height),
                                                   true);
                 if (!program_options.output_video.isOpened()) {
@@ -341,33 +344,33 @@ int main(int argsc, char** argsv) {
 
         switch (program_options.detection_type) {
             case program_options.OBJECT:
-                processObjectVideo(detector, csv_file_stream, program_options);
+                processObjectVideo(*detector, csv_file_stream, program_options);
                 break;
             case program_options.OCCUPANT:
-                processOccupantVideo(detector, csv_file_stream, program_options);
+                processOccupantVideo(*detector, csv_file_stream, program_options);
                 break;
             case program_options.FACE:
                 //update the detector accordingly
-                detector = vision::SyncFrameDetector(program_options.data_dir, program_options.num_faces);
-                processFaceVideo(detector, csv_file_stream, program_options);
+                detector = std::make_shared<vision::SyncFrameDetector>(program_options.data_dir, program_options.num_faces);
+                processFaceVideo(*detector, csv_file_stream, program_options);
                 break;
             default:
                 std::cerr << "This should never happen " << program_options.detection_type << std::endl;
                 return 1;
         }
 
-        detector.stop();
+        detector->stop();
         csv_file_stream.close();
 
         std::cout << "Output written to file: " << csv_path << std::endl;
     }
     catch (std::exception& ex) {
-        std::cerr << ex.what();
-        // if video_reader couldn't load the video/image, it will throw. Since the detector was started before initializing the video_reader, We need to call `detector.stop()` to avoid crashing
-        detector.stop();
+        StatusListener::printException(ex);
+        // if video_reader couldn't load the video/image, it will throw. Since the detector was started before initializing the video_reader, We need to call `detector->stop()` to avoid crashing
+        if (detector) {
+            detector->stop();
+        }
         return 1;
     }
     return 0;
 }
-
-

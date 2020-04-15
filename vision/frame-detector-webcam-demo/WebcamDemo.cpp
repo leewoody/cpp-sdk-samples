@@ -93,7 +93,8 @@ void assembleProgramOptions(po::options_description& description, ProgramOptions
 }
 
 bool processFrameFromWebcam(unique_ptr<vision::Detector>& frame_detector, ProgramOptions& program_options,
-                            cv::VideoCapture& webcam, const std::chrono::system_clock::time_point& start_time) {
+                            cv::VideoCapture& webcam, const std::chrono::system_clock::time_point& start_time,
+                            vision::Frame& frame) {
 
     cv::Mat img;
     if (!webcam.read(img)) {   //Capture an image from the camera
@@ -105,19 +106,19 @@ bool processFrameFromWebcam(unique_ptr<vision::Detector>& frame_detector, Progra
         std::chrono::system_clock::now() - start_time).count();
 
     // Create a Frame from the webcam image and process it with the Detector
-    const vision::Frame f(img.size().width, img.size().height, img.data, vision::Frame::ColorFormat::BGR, ts);
+    frame = vision::Frame(img.size().width, img.size().height, img.data, vision::Frame::ColorFormat::BGR, ts);
     if (program_options.sync) {
-        dynamic_cast<vision::SyncFrameDetector*>(frame_detector.get())->process(f);
+        dynamic_cast<vision::SyncFrameDetector*>(frame_detector.get())->process(frame);
     }
     else {
-        dynamic_cast<vision::FrameDetector*>(frame_detector.get())->process(f);
+        dynamic_cast<vision::FrameDetector*>(frame_detector.get())->process(frame);
     }
 
     return true;
 }
 
 void processFaceStream(unique_ptr<vision::Detector>& frame_detector, std::ofstream& csv_file_stream,
-                       ProgramOptions program_options, StatusListener& status_listener, cv::VideoCapture& webcam) {
+                       ProgramOptions& program_options, StatusListener& status_listener, cv::VideoCapture& webcam) {
 
     // prepare listeners
     PlottingImageListener image_listener(csv_file_stream, program_options.draw_display, !program_options
@@ -135,8 +136,9 @@ void processFaceStream(unique_ptr<vision::Detector>& frame_detector, std::ofstre
     //Start the frame detector thread.
     frame_detector->start();
 
+    vision::Frame frame;
     do {
-        if (!processFrameFromWebcam(frame_detector, program_options, webcam, start_time)) {
+        if (!processFrameFromWebcam(frame_detector, program_options, webcam, start_time, frame)) {
             break;
         }
 
@@ -154,7 +156,7 @@ void processFaceStream(unique_ptr<vision::Detector>& frame_detector, std::ofstre
 }
 
 void processObjectStream(unique_ptr<vision::Detector>& frame_detector, std::ofstream& csv_file_stream,
-                         ProgramOptions program_options, StatusListener& status_listener, cv::VideoCapture& webcam) {
+                         ProgramOptions& program_options, StatusListener& status_listener, cv::VideoCapture& webcam) {
 
     // prepare listeners
     PlottingObjectListener object_listener(csv_file_stream,
@@ -175,11 +177,12 @@ void processObjectStream(unique_ptr<vision::Detector>& frame_detector, std::ofst
     //Start the frame detector thread.
     frame_detector->start();
 
+    vision::Frame frame;
     do {
-        if (!processFrameFromWebcam(frame_detector, program_options, webcam, start_time)) {
+        if (!processFrameFromWebcam(frame_detector, program_options, webcam, start_time, frame)) {
             break;
         }
-        object_listener.processResults();
+        object_listener.processResults(frame);
         //To save output video file
         if (program_options.write_video) {
             program_options.output_video << object_listener.getImageData();
@@ -194,7 +197,7 @@ void processObjectStream(unique_ptr<vision::Detector>& frame_detector, std::ofst
 
 void processOccupantStream(unique_ptr<vision::Detector>& frame_detector,
                            std::ofstream& csv_file_stream,
-                           ProgramOptions program_options,
+                           ProgramOptions& program_options,
                            StatusListener& status_listener,
                            cv::VideoCapture& webcam) {
 
@@ -213,12 +216,13 @@ void processOccupantStream(unique_ptr<vision::Detector>& frame_detector,
     //Start the frame detector thread.
     frame_detector->start();
 
+    vision::Frame frame;
     do {
-        if (!processFrameFromWebcam(frame_detector, program_options, webcam, start_time)) {
+        if (!processFrameFromWebcam(frame_detector, program_options, webcam, start_time, frame)) {
             break;
         }
 
-        occupant_listener.processResults();
+        occupant_listener.processResults(frame);
         //To save output video file
         if (program_options.write_video) {
             program_options.output_video << occupant_listener.getImageData();
@@ -234,6 +238,7 @@ void processOccupantStream(unique_ptr<vision::Detector>& frame_detector,
 int main(int argsc, char** argsv) {
 
     std::cout << "Hit ESCAPE key to exit app.." << endl;
+    unique_ptr<vision::Detector> frame_detector;
 
     try {
         //setting up output precision
@@ -324,7 +329,6 @@ int main(int argsc, char** argsv) {
         }
 
         // create the Detector
-        unique_ptr<vision::Detector> frame_detector;
         if (program_options.sync) {
             frame_detector = std::unique_ptr<vision::Detector>(new vision::SyncFrameDetector(program_options.data_dir,
                                                                                              program_options.num_faces));
@@ -360,7 +364,7 @@ int main(int argsc, char** argsv) {
             }
             program_options.output_video.open(program_options.output_video_path,
                                               CV_FOURCC('D', 'X', '5', '0'),
-                                              15,
+                                              program_options.camera_framerate,
                                               cv::Size(mat.size().width, mat.size().height),
                                               true);
             if (!program_options.output_video.isOpened()) {
@@ -390,8 +394,11 @@ int main(int argsc, char** argsv) {
             std::cout << "Output written to file" << program_options.output_file_path << std::endl;
         }
     }
-    catch (...) {
-        std::cerr << "Encountered an exception " << std::endl;
+    catch (std::exception& ex) {
+        StatusListener::printException(ex);
+        if (frame_detector){
+            frame_detector->stop();
+        }
         return 1;
     }
 

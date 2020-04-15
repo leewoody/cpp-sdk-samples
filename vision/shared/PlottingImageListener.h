@@ -11,7 +11,7 @@ public:
 
     PlottingImageListener(std::ofstream& csv, bool draw_display, bool enable_logging, bool draw_face_id) :
         PlottingListener(csv, draw_display, enable_logging), capture_last_ts_(0), process_fps_(0), capture_fps_(0),
-        draw_face_id_(draw_face_id) {
+        draw_face_id_(draw_face_id), frames_with_faces_(0) {
         out_stream_ << "TimeStamp,faceId,upperLeftX,upperLeftY,lowerRightX,lowerRightY,confidence,interocularDistance,";
         for (const auto& angle : viz_.HEAD_ANGLES) {
             out_stream_ << angle.second << ",";
@@ -29,7 +29,7 @@ public:
         out_stream_ << std::fixed;
     }
 
-    unsigned int getCaptureFrameRate() {
+    int getCaptureFrameRate() {
         std::lock_guard<std::mutex> lg(mtx);
         return capture_fps_;
     }
@@ -41,7 +41,7 @@ public:
         process_last_ts_ = image.getTimestamp();
 
         processed_frames_++;
-        if (faces.size() > 0) {
+        if (!faces.empty()) {
             frames_with_faces_++;
         }
     };
@@ -82,17 +82,17 @@ public:
                         << f.getMeasurements().at(vision::Measurement::INTEROCULAR_DISTANCE) << ",";
 
             auto measurements = f.getMeasurements();
-            for (auto m : viz_.HEAD_ANGLES) {
+            for (const auto& m : viz_.HEAD_ANGLES) {
                 out_stream_ << measurements.at(m.first) << ",";
             }
 
             auto emotions = f.getEmotions();
-            for (auto emo : viz_.EMOTIONS) {
+            for (const auto& emo : viz_.EMOTIONS) {
                 out_stream_ << emotions.at(emo.first) << ",";
             }
 
             auto expressions = f.getExpressions();
-            for (auto exp : viz_.EXPRESSIONS) {
+            for (const auto& exp : viz_.EXPRESSIONS) {
                 out_stream_ << expressions.at(exp.first) << ",";
             }
 
@@ -167,15 +167,15 @@ public:
         }
     }
 
-    unsigned int getFramesWithFaces() {
+    int getFramesWithFaces() const {
         return frames_with_faces_;
     }
 
     int getFramesWithFacesPercent() {
-        return (static_cast<int>(frames_with_faces_) / processed_frames_) * 100;
+        return (static_cast<float>(frames_with_faces_) / processed_frames_) * 100;
     }
 
-    unsigned int getProcessingFrameRate() {
+    int getProcessingFrameRate() {
         std::lock_guard<std::mutex> lg(mtx);
         return process_fps_;
     }
@@ -194,8 +194,8 @@ public:
 
 private:
     Timestamp capture_last_ts_;
-    unsigned int process_fps_;
-    unsigned int capture_fps_;
+    int process_fps_;
+    int capture_fps_;
     bool draw_face_id_;
-    unsigned int frames_with_faces_;
+    int frames_with_faces_;
 };
