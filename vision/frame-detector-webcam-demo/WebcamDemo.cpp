@@ -75,7 +75,7 @@ void assembleProgramOptions(po::options_description& description, ProgramOptions
         ("cfps", po::value<int>(&program_options.camera_framerate)->default_value(30), "Camera capture framerate.")
         ("cid", po::value<int>(&program_options.camera_id)->default_value(0), "Camera ID.")
         ("numFaces",
-         po::value<unsigned int>(&program_options.num_faces)->default_value(1),
+         po::value<unsigned int>(&program_options.num_faces)->default_value(5),
          "Number of faces to be tracked.")
         ("draw", po::value<bool>(&program_options.draw_display)->default_value(true), "Draw metrics on screen.")
         ("sync",
@@ -92,7 +92,7 @@ void assembleProgramOptions(po::options_description& description, ProgramOptions
         ("occupant", "Enable occupant detection");
 }
 
-bool processFrameFromWebcam(unique_ptr<vision::Detector>& frame_detector, ProgramOptions& program_options,
+bool processFrameFromWebcam(std::unique_ptr<vision::Detector>& frame_detector, ProgramOptions& program_options,
                             cv::VideoCapture& webcam, const std::chrono::system_clock::time_point& start_time,
                             vision::Frame& frame) {
 
@@ -117,7 +117,7 @@ bool processFrameFromWebcam(unique_ptr<vision::Detector>& frame_detector, Progra
     return true;
 }
 
-void processFaceStream(unique_ptr<vision::Detector>& frame_detector, std::ofstream& csv_file_stream,
+void processFaceStream(std::unique_ptr<vision::Detector>& frame_detector, std::ofstream& csv_file_stream,
                        ProgramOptions& program_options, StatusListener& status_listener, cv::VideoCapture& webcam) {
 
     // prepare listeners
@@ -155,7 +155,7 @@ void processFaceStream(unique_ptr<vision::Detector>& frame_detector, std::ofstre
 #endif
 }
 
-void processObjectStream(unique_ptr<vision::Detector>& frame_detector, std::ofstream& csv_file_stream,
+void processObjectStream(std::unique_ptr<vision::Detector>& frame_detector, std::ofstream& csv_file_stream,
                          ProgramOptions& program_options, StatusListener& status_listener, cv::VideoCapture& webcam) {
 
     // prepare listeners
@@ -195,7 +195,7 @@ void processObjectStream(unique_ptr<vision::Detector>& frame_detector, std::ofst
 #endif
 }
 
-void processOccupantStream(unique_ptr<vision::Detector>& frame_detector,
+void processOccupantStream(std::unique_ptr<vision::Detector>& frame_detector,
                            std::ofstream& csv_file_stream,
                            ProgramOptions& program_options,
                            StatusListener& status_listener,
@@ -238,7 +238,7 @@ void processOccupantStream(unique_ptr<vision::Detector>& frame_detector,
 int main(int argsc, char** argsv) {
 
     std::cout << "Hit ESCAPE key to exit app.." << endl;
-    unique_ptr<vision::Detector> frame_detector;
+    std::unique_ptr<vision::Detector> frame_detector;
 
     try {
         //setting up output precision
@@ -387,7 +387,9 @@ int main(int argsc, char** argsv) {
                 return 1;
         }
 
-        frame_detector->stop();
+        if (frame_detector){
+            frame_detector->stop();
+        }
         csv_file_stream.close();
 
         if (boost::filesystem::exists(program_options.output_file_path)) {

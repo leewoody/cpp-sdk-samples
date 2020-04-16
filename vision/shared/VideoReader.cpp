@@ -5,10 +5,10 @@
 
 using namespace std;
 
-VideoReader::VideoReader(const boost::filesystem::path& file_path, const unsigned int sampling_frame_rate)
-    : sampling_frame_rate(sampling_frame_rate) {
+VideoReader::VideoReader(const boost::filesystem::path& file_path, const int sampling_frame_rate)
+    : sampling_frame_rate_(sampling_frame_rate) {
 
-    last_timestamp_ms =
+    last_timestamp_ms_ =
         sampling_frame_rate == 0
         ? -1
         : (0 - 1000 / sampling_frame_rate); // Initialize so that with sampling, we always process the first frame.
@@ -24,17 +24,17 @@ VideoReader::VideoReader(const boost::filesystem::path& file_path, const unsigne
         throw runtime_error("Unsupported file extension: " + ext.string());
     }
 
-    cap.open(file_path.string());
-    if (!cap.isOpened()) {
+    cap_.open(file_path.string());
+    if (!cap_.isOpened()) {
         throw runtime_error("Error opening video/image file: " + file_path.string());
     }
 
-    total_frames = cap.get(CV_CAP_PROP_FRAME_COUNT);
-    frame_progress = std::unique_ptr<ProgressBar>(new ProgressBar(total_frames, "Video processed:"));
+    total_frames_ = cap_.get(CV_CAP_PROP_FRAME_COUNT);
+    frame_progress_ = std::unique_ptr<ProgressBar>(new ProgressBar(total_frames_, "Video processed:"));
 }
 
 uint64_t VideoReader::TotalFrames() const {
-    return total_frames;
+    return total_frames_;
 }
 
 bool VideoReader::GetFrame(cv::Mat& bgr_frame, affdex::Timestamp& timestamp_ms) {
@@ -43,22 +43,22 @@ bool VideoReader::GetFrame(cv::Mat& bgr_frame, affdex::Timestamp& timestamp_ms) 
     do {
         frame_data_loaded = GetFrameData(bgr_frame, timestamp_ms);
         if (frame_data_loaded) {
-            current_frame++;
+            current_frame_++;
         }
-    } while ((sampling_frame_rate > 0) && (timestamp_ms > 0) &&
-        ((timestamp_ms - last_timestamp_ms) < 1000 / sampling_frame_rate) && frame_data_loaded);
+    } while ((sampling_frame_rate_ > 0) && (timestamp_ms > 0) &&
+        ((timestamp_ms - last_timestamp_ms_) < 1000 / sampling_frame_rate_) && frame_data_loaded);
 
-    last_timestamp_ms = timestamp_ms;
-    frame_progress->progressed(current_frame);
+    last_timestamp_ms_ = timestamp_ms;
+    frame_progress_->progressed(current_frame_);
     return frame_data_loaded;
 }
 
 bool VideoReader::GetFrameData(cv::Mat& bgr_frame, affdex::Timestamp& timestamp_ms) {
     static const int MAX_ATTEMPTS = 2;
-    affdex::Timestamp prev_timestamp_ms = cap.get(::CV_CAP_PROP_POS_MSEC);
-    bool frame_found = cap.grab();
-    bool frame_retrieved = cap.retrieve(bgr_frame);
-    timestamp_ms = cap.get(::CV_CAP_PROP_POS_MSEC);
+    affdex::Timestamp prev_timestamp_ms = cap_.get(::CV_CAP_PROP_POS_MSEC);
+    bool frame_found = cap_.grab();
+    bool frame_retrieved = cap_.retrieve(bgr_frame);
+    timestamp_ms = cap_.get(::CV_CAP_PROP_POS_MSEC);
 
     // Two conditions result in failure to decode (grab/retrieve) a video frame (timestamp reports 0):
     // (1) error on a particular frame
@@ -71,9 +71,9 @@ bool VideoReader::GetFrameData(cv::Mat& bgr_frame, affdex::Timestamp& timestamp_
     // succeed. So as a workaround, the new timestamp must be greater than the previous one.
     int n_attempts = 0;
     while (!(frame_found && frame_retrieved) && n_attempts++ < MAX_ATTEMPTS) {
-        frame_found = cap.grab();
-        frame_retrieved = cap.retrieve(bgr_frame);
-        timestamp_ms = cap.get(::CV_CAP_PROP_POS_MSEC);
+        frame_found = cap_.grab();
+        frame_retrieved = cap_.retrieve(bgr_frame);
+        timestamp_ms = cap_.get(::CV_CAP_PROP_POS_MSEC);
     }
 
     if (frame_found && frame_retrieved && n_attempts > 0) {
