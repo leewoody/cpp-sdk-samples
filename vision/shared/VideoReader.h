@@ -8,7 +8,7 @@
 
 class VideoReader {
 public:
-    VideoReader(const boost::filesystem::path& file_path, unsigned int sampling_frame_rate);
+    VideoReader(const boost::filesystem::path& file_path, const int sampling_frame_rate);
 
     bool GetFrame(cv::Mat& bgr_frame, affdex::Timestamp& timestamp_ms);
     bool GetFrameData(cv::Mat& bgr_frame, affdex::Timestamp& timestamp_ms);
@@ -16,11 +16,11 @@ public:
     uint64_t TotalFrames() const;
 
 private:
-    cv::VideoCapture cap;
-    affdex::Timestamp last_timestamp_ms;
-    const unsigned int sampling_frame_rate;
+    cv::VideoCapture cap_;
+    affdex::Timestamp last_timestamp_ms_ = 0;
+    const int sampling_frame_rate_;
 
-    uint64_t total_frames;
-    uint64_t current_frame = 0;
-    std::unique_ptr<ProgressBar> frame_progress;
+    uint64_t total_frames_ = 0;
+    uint64_t current_frame_ = 0;
+    std::unique_ptr<ProgressBar> frame_progress_;
 };

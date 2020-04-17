@@ -12,9 +12,9 @@ class PlottingObjectListener : public ObjectListener, public PlottingListener<Ob
 public:
 
     PlottingObjectListener(std::ofstream& csv, bool draw_display, bool enable_logging, bool draw_object_id,
-        const std::map<Feature, Duration>& callback_intervals, std::vector<CabinRegion> cabin_regions) :
-        PlottingListener(csv, draw_display, enable_logging), callback_intervals_(callback_intervals),
-        cabin_regions_(std::move(cabin_regions)), draw_object_id_(draw_object_id) {
+        std::map<Feature, Duration> callback_intervals, std::vector<CabinRegion> cabin_regions) :
+        PlottingListener(csv, draw_display, enable_logging), callback_intervals_(std::move(callback_intervals)),
+        cabin_regions_(std::move(cabin_regions)), draw_object_id_(draw_object_id), frames_with_objects_(0) {
         out_stream_ << "TimeStamp, objectId, confidence, upperLeftX, upperLeftY, lowerRightX, lowerRightY, ObjectType";
 
         for (const auto& cr :cabin_regions_) {
@@ -24,6 +24,13 @@ public:
         out_stream_ << std::endl;
         out_stream_.precision(2);
         out_stream_ << std::fixed;
+
+        // set the timeout to the max callback interval
+        for (const auto& pair : callback_intervals_) {
+            if (pair.second > timeout_) {
+                timeout_ = pair.second;
+            }
+        }
     }
 
     std::map<Feature, Duration> getCallbackIntervals() const override {
@@ -124,27 +131,19 @@ public:
         image_data_ = viz_.getImageData();
     }
 
+    using PlottingListener::processResults;  // make the overload taking a Frame arg visible
     void processResults() override {
         while (getDataSize() > 0) {
-            const std::pair<vision::Frame, std::map<ObjectId, Object>> dataPoint = getData();
-            vision::Frame frame = dataPoint.first;
-            const std::map<ObjectId, Object> objects = dataPoint.second;
-
-            if (draw_display_) {
-                draw(objects, frame);
-            }
-
-            outputToFile(objects, frame.getTimestamp());
-
-            if (logging_enabled_) {
-                std::cout << "timestamp: " << frame.getTimestamp()
-                          << " objects: " << objects.size() << std::endl;
-            }
+            latest_data_ = getData();
+            drawRecentFrame();
+            vision::Frame old_frame = latest_data_.first;
+            const auto objects = latest_data_.second;
+            outputToFile(objects, old_frame.getTimestamp());
         }
     }
 
-    int getSamplesWithObjectsPercent() {
-        return (static_cast<int>(frames_with_objects_) / processed_frames_) * 100;
+    int getSamplesWithObjectsPercent() const {
+        return (static_cast<float>(frames_with_objects_) / processed_frames_) * 100;
     }
 
     std::string getObjectTypesDetected() const {
@@ -193,5 +192,5 @@ private:
     std::vector<Object::Type> object_types_;
     std::vector<int> object_regions_;
     bool draw_object_id_;
-    unsigned int frames_with_objects_;
+    int frames_with_objects_;
 };
