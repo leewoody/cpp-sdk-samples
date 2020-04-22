@@ -66,7 +66,7 @@ void assembleProgramOptions(po::options_description& description, ProgramOptions
          po::value<unsigned int>(&program_options.sampling_frame_rate)->default_value(15),
          "Input sampling frame rate. Default is 0, which means the app will respect the video's FPS and read all frames")
         ("draw", po::value<bool>(&program_options.draw_display)->default_value(true), "Draw video on screen.")
-        ("numFaces", po::value<unsigned int>(&program_options.num_faces)->default_value(1), "Number of faces to be "
+        ("numFaces", po::value<unsigned int>(&program_options.num_faces)->default_value(5), "Number of faces to be "
                                                                                             "tracked.")
         ("loop", po::bool_switch(&program_options.loop)->default_value(false), "Loop over the video being processed.")
         ("face_id",
@@ -325,7 +325,7 @@ int main(int argsc, char** argsv) {
             VideoReader video_reader(program_options.input_video_path, program_options.sampling_frame_rate);
             cv::Mat mat;
             Timestamp timestamp_ms;
-            if (video_reader.GetFrame(mat, timestamp_ms)) {
+            if (video_reader.GetFrameData(mat, timestamp_ms)) {
                 program_options.output_video.open(program_options.output_video_path,
                                                   CV_FOURCC('D', 'X', '5', '0'),
                                                   program_options.sampling_frame_rate,
@@ -359,7 +359,9 @@ int main(int argsc, char** argsv) {
                 return 1;
         }
 
-        detector->stop();
+        if (detector) {
+            detector->stop();
+        }
         csv_file_stream.close();
 
         std::cout << "Output written to file: " << csv_path << std::endl;
