@@ -48,8 +48,7 @@ public:
 
     void onImageCapture(vision::Frame image) override {
         std::lock_guard<std::mutex> lg(mtx);
-        //check divide by zero
-        const int diff = std::abs(image.getTimestamp() - capture_last_ts_);
+        const int diff = image.getTimestamp() - capture_last_ts_;
         if (diff > 0) {
             capture_fps_ = 1000.0f / diff;
             capture_last_ts_ = image.getTimestamp();

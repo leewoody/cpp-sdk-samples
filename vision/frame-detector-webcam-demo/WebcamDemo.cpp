@@ -136,23 +136,29 @@ void processFaceStream(std::unique_ptr<vision::Detector>& frame_detector, std::o
     //Start the frame detector thread.
     frame_detector->start();
 
-    vision::Frame frame;
-    do {
-        if (!processFrameFromWebcam(frame_detector, program_options, webcam, start_time, frame)) {
-            break;
-        }
+    try {
+        vision::Frame frame;
+        do {
+            if (!processFrameFromWebcam(frame_detector, program_options, webcam, start_time, frame)) {
+                break;
+            }
 
-        image_listener.processResults();
-        //To save output video file
-        if (program_options.write_video) {
-            program_options.output_video << image_listener.getImageData();
+            image_listener.processResults();
+            //To save output video file
+            if (program_options.write_video) {
+                program_options.output_video << image_listener.getImageData();
+            }
         }
-    }
 #ifdef _WIN32
-        while (!GetAsyncKeyState(VK_ESCAPE) && status_listener.isRunning());
+            while (!GetAsyncKeyState(VK_ESCAPE) && status_listener.isRunning());
 #else //  _WIN32
-    while (status_listener.isRunning() && (cv::waitKey(20) != 27)); // ascii for ESC
+        while (status_listener.isRunning() && (cv::waitKey(20) != 27)); // ascii for ESC
 #endif
+    }
+    catch (std::exception& ex) {
+        StatusListener::printException(ex);
+    }
+    frame_detector->stop();
 }
 
 void processObjectStream(std::unique_ptr<vision::Detector>& frame_detector, std::ofstream& csv_file_stream,
@@ -177,22 +183,28 @@ void processObjectStream(std::unique_ptr<vision::Detector>& frame_detector, std:
     //Start the frame detector thread.
     frame_detector->start();
 
-    vision::Frame frame;
-    do {
-        if (!processFrameFromWebcam(frame_detector, program_options, webcam, start_time, frame)) {
-            break;
+    try {
+        vision::Frame frame;
+        do {
+            if (!processFrameFromWebcam(frame_detector, program_options, webcam, start_time, frame)) {
+                break;
+            }
+            object_listener.processResults(frame);
+            //To save output video file
+            if (program_options.write_video) {
+                program_options.output_video << object_listener.getImageData();
+            }
         }
-        object_listener.processResults(frame);
-        //To save output video file
-        if (program_options.write_video) {
-            program_options.output_video << object_listener.getImageData();
-        }
-    }
 #ifdef _WIN32
-        while (!GetAsyncKeyState(VK_ESCAPE) && status_listener.isRunning());
+            while (!GetAsyncKeyState(VK_ESCAPE) && status_listener.isRunning());
 #else //  _WIN32
-    while (status_listener.isRunning() && (cv::waitKey(20) != 27)); // ascii for ESC
+        while (status_listener.isRunning() && (cv::waitKey(20) != 27)); // ascii for ESC
 #endif
+    }
+    catch (std::exception& ex) {
+        StatusListener::printException(ex);
+    }
+    frame_detector->stop();
 }
 
 void processOccupantStream(std::unique_ptr<vision::Detector>& frame_detector,
@@ -216,23 +228,29 @@ void processOccupantStream(std::unique_ptr<vision::Detector>& frame_detector,
     //Start the frame detector thread.
     frame_detector->start();
 
-    vision::Frame frame;
-    do {
-        if (!processFrameFromWebcam(frame_detector, program_options, webcam, start_time, frame)) {
-            break;
-        }
+    try {
+        vision::Frame frame;
+        do {
+            if (!processFrameFromWebcam(frame_detector, program_options, webcam, start_time, frame)) {
+                break;
+            }
 
-        occupant_listener.processResults(frame);
-        //To save output video file
-        if (program_options.write_video) {
-            program_options.output_video << occupant_listener.getImageData();
+            occupant_listener.processResults(frame);
+            //To save output video file
+            if (program_options.write_video) {
+                program_options.output_video << occupant_listener.getImageData();
+            }
         }
-    }
 #ifdef _WIN32
-        while (!GetAsyncKeyState(VK_ESCAPE) && status_listener.isRunning());
+            while (!GetAsyncKeyState(VK_ESCAPE) && status_listener.isRunning());
 #else //  _WIN32
-    while (status_listener.isRunning() && (cv::waitKey(20) != 27)); // ascii for ESC
+        while (status_listener.isRunning() && (cv::waitKey(20) != 27)); // ascii for ESC
 #endif
+    }
+    catch (std::exception& ex) {
+        StatusListener::printException(ex);
+    }
+    frame_detector->stop();
 }
 
 int main(int argsc, char** argsv) {
@@ -387,9 +405,6 @@ int main(int argsc, char** argsv) {
                 return 1;
         }
 
-        if (frame_detector){
-            frame_detector->stop();
-        }
         csv_file_stream.close();
 
         if (boost::filesystem::exists(program_options.output_file_path)) {
@@ -398,9 +413,6 @@ int main(int argsc, char** argsv) {
     }
     catch (std::exception& ex) {
         StatusListener::printException(ex);
-        if (frame_detector){
-            frame_detector->stop();
-        }
         return 1;
     }
 
