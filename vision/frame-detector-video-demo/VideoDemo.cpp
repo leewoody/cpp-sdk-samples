@@ -43,6 +43,8 @@ struct ProgramOptions {
     bool write_video = false;
     cv::VideoWriter output_video;
     DetectionType detection_type = FACE;
+    bool identity = false;
+    bool appearances = false;
 };
 
 void assembleProgramOptions(po::options_description& description, ProgramOptions& program_options) {
@@ -76,7 +78,9 @@ void assembleProgramOptions(po::options_description& description, ProgramOptions
          po::bool_switch(&program_options.disable_logging)->default_value(false),
          "Disable logging to console")
         ("object", "Enable object detection")
-        ("occupant", "Enable occupant detection");
+        ("occupant", "Enable occupant detection")
+        ("identity", "Enable identity detection")
+        ("appearances", "Enable appearances (e.g. age) detection");
 }
 
 void processObjectVideo(vision::SyncFrameDetector& detector, std::ofstream& csv_file_stream,
@@ -184,8 +188,13 @@ void processFaceVideo(vision::SyncFrameDetector& detector,
                       std::ofstream& csv_file_stream,
                       ProgramOptions& program_options) {
     // configure the Detector by enabling features
-    detector.enable({vision::Feature::EMOTIONS, vision::Feature::EXPRESSIONS, vision::Feature::IDENTITY,
-                     vision::Feature::APPEARANCES});
+    detector.enable({vision::Feature::EMOTIONS, vision::Feature::EXPRESSIONS});
+    if (program_options.identity) {
+        detector.enable(vision::Feature::IDENTITY);
+    }
+    if (program_options.appearances) {
+        detector.enable(vision::Feature::APPEARANCES);
+    }
 
     // prepare listeners
     PlottingImageListener image_listener(csv_file_stream, program_options.draw_display,
@@ -280,6 +289,12 @@ int main(int argsc, char** argsv) {
     }
     else {
         detection_type_str = "_faces";
+        if (args.count("identity")) {
+            program_options.identity = true;
+        }
+        if (args.count("appearances")) {
+            program_options.appearances = true;
+        }
         std::cout << "Setting up face detection\n";
     }
 

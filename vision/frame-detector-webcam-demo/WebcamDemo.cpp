@@ -25,7 +25,6 @@ static const std::string DISPLAY_DATA_DIR_ENV_VAR = "AFFECTIVA_VISION_DATA_DIR";
 static const affdex::Str DATA_DIR_ENV_VAR = STR(DISPLAY_DATA_DIR_ENV_VAR);
 
 struct ProgramOptions {
-
     enum DetectionType {
         FACE,
         OBJECT,
@@ -47,6 +46,8 @@ struct ProgramOptions {
     bool write_video = false;
     cv::VideoWriter output_video;
     DetectionType detection_type = FACE;
+    bool identity = false;
+    bool appearances = false;
 };
 
 void assembleProgramOptions(po::options_description& description, ProgramOptions& program_options) {
@@ -89,7 +90,9 @@ void assembleProgramOptions(po::options_description& description, ProgramOptions
          "Draw face id on screen. Note: Drawing to screen must be enabled.")
         ("file,f", po::value<affdex::Path>(&program_options.output_file_path), "Name of the output CSV file.")
         ("object", "Enable object detection")
-        ("occupant", "Enable occupant detection");
+        ("occupant", "Enable occupant detection")
+        ("identity", "Enable identity detection")
+        ("appearances", "Enable appearances (e.g. age) detection");
 }
 
 bool processFrameFromWebcam(std::unique_ptr<vision::Detector>& frame_detector, ProgramOptions& program_options,
@@ -304,6 +307,12 @@ int main(int argsc, char** argsv) {
             program_options.detection_type = program_options.OCCUPANT;
         }
         else {
+            if (args.count("identity")) {
+                program_options.identity = true;
+            }
+            if (args.count("appearances")) {
+                program_options.appearances = true;
+            }
             std::cout << "Setting up face detection\n";
         }
 
