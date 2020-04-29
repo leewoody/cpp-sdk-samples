@@ -179,7 +179,7 @@ macro(CONFIG_COMPILER_11)
     elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         if (CMAKE_SYSTEM_NAME MATCHES "Emscripten")
             status("Updating compiler to make use of C++11")
-            set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -O2 -fno-vectorize")
+            set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -Oz -fno-vectorize")
             set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -O0 -fno-vectorize")
             set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS} ${CXX_COMPILER_WARNINGS}")
         else()
@@ -217,7 +217,7 @@ macro(ADD_BOOST proj)
     set(Boost_USE_STATIC_LIBS ON)
     set(BOOST_MIN_VERSION "1.63.0" CACHE STRING "Minimum version of boost you would like to link against (e.g. C:/BOOST_1_63_0 is 1.63.0" )
     status("")
-    find_package(Boost ${BOOST_MIN_VERSION} REQUIRED COMPONENTS ${BOOST_COMPONENTS} )
+        find_package(Boost ${BOOST_MIN_VERSION} REQUIRED COMPONENTS ${BOOST_COMPONENTS} )
     if(NOT Boost_FOUND)
         if(NOT DEFINED BOOST_ROOT)
             set(BOOST_ROOT "" CACHE PATH "Root directory for Boost.")
@@ -229,6 +229,17 @@ macro(ADD_BOOST proj)
     list( APPEND ${proj}_LIBS ${Boost_LIBRARIES})
 endmacro()
 
+
+
+macro(ADD_TFLITE proj)
+    FIND_AND_ADD_LIB(${proj} TFlite)
+
+    # TFlite dependencies
+    # Flatbuffers
+    #find_package(Flatbuffer REQUIRED)
+    #list( APPEND ${proj}_INCLUDE_DIRS ${Flatbuffer_INCLUDE_DIRS} )
+endmacro()
+
 # Setup install locations
 macro(SETUP_INSTALL_DIRS)
     if( NOT RUNTIME_INSTALL_DIRECTORY )
@@ -236,13 +247,13 @@ macro(SETUP_INSTALL_DIRS)
     endif( NOT RUNTIME_INSTALL_DIRECTORY )
 
     if( NOT LIBRARY_INSTALL_DIRECTORY )
-        set( DEFAULT_LIBRARY_INSTALL_DIRECTORY "lib")
+            set( DEFAULT_LIBRARY_INSTALL_DIRECTORY "lib")
         set( LIBRARY_INSTALL_DIRECTORY ${DEFAULT_LIBRARY_INSTALL_DIRECTORY} CACHE STRING
             "Install sub-directory of CMAKE_INSTALL_PREFIX for LIBRARY targets (shared libs)" )
     endif( NOT LIBRARY_INSTALL_DIRECTORY )
 
     if( NOT ARCHIVE_INSTALL_DIRECTORY )
-        set( DEFAULT_ARCHIVE_INSTALL_DIRECTORY "lib")
+            set( DEFAULT_ARCHIVE_INSTALL_DIRECTORY "lib")
         set( ARCHIVE_INSTALL_DIRECTORY ${DEFAULT_ARCHIVE_INSTALL_DIRECTORY} CACHE STRING
             "Install sub-directory of CMAKE_INSTALL_PREFIX for ARCHIVE targets (static libs and *.def on windows)" )
     endif( NOT ARCHIVE_INSTALL_DIRECTORY )
