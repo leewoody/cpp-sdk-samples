@@ -1,0 +1,90 @@
+# A Docker file to be used for building the sample applications for the Android SDK using Ubuntu 18.04
+#
+# build:
+# $ docker build -f Dockerfile.android --build-arg AFFECTIVA_AUTO_SDK_2_2_0_URL=$AFFECTIVA_AUTO_SDK_2_2_0_URL --build-arg BRANCH=$BRANCH --tag=affectiva-auto:v2.2.0-ics .
+#
+# the result will be an image that has the tar'ed artifact of the sample app and all of its dependencies installed
+#
+# run this container interactively:
+# $ docker run -it --rm affectiva-auto:v2.2.0-ics
+#
+# running the webcam or mic demos interactively requires some privileges, devices, and access to the X11 socket:
+# $ docker run -it --privileged --rm --net=host \
+#        -v /tmp/.X11-unix:/tmp/.X11-unix  \
+#        -v $XAUTHORITY:/root/.Xauthority \
+#        -e DISPLAY=$DISPLAY     \
+#        --device=/dev/video0 \
+#        --device=/dev/snd \
+#        affectiva-auto:v2.2.0-ics
+#
+# Then from the shell, run the following for the webcam demo:
+# $ /opt/testapp-artifact/build/vision/bin/frame-detector-webcam-demo -d $AUTO_SDK_DIR/data/
+#
+# Or, you can check the docker-compose.yml file for options to build and run using docker-compose (recommended)
+
+FROM affectiva/android:arm64-api28
+
+# options
+ENV TOOLCHAIN aarch64-linux-android-4.9
+ENV ANDROID_API android-28
+ENV NDK_LIB ${ANDROID_NDK_HOME}/platforms/${ANDROID_API}/arch-arm64/usr/lib
+
+ENV SRC_DIR /opt/src
+ENV BUILD_DIR /opt/build
+ENV VISION_BUILD_DIR /opt/build/vision
+ENV SPEECH_BUILD_DIR /opt/build/speech
+ENV ARTIFACT_DIR /opt/testapp-artifact
+ENV AUTO_SDK_DIR $SRC_DIR/affectiva-ics-sdk-android-arm64-2.2.0-qc
+ENV FFMPEG_LIB_PATH ${AFFECTIVA_FFMPEG}/lib
+ENV LD_LIBRARY_PATH ${NDK_LIB}:${AUTO_SDK_DIR}/lib/arm64-v8a
+ENV LIBRARY_PATH ${NDK_LIB}:${AUTO_SDK_DIR}/lib/arm64-v8a:${AFFECTIVA_FFMPEG}/lib
+#ENV LD_PRELOAD /usr/lib/x86_64-linux-gnu/libopencv_core.so.2.4
+
+# deps
+ENV Boost_DIR ${AFFECTIVA_BOOST}
+ENV TFlite_DIR ${AUTO_SDK_DIR}/lib/arm64-v8a
+
+#################################
+###### Clone Sample App Repo ######
+#################################
+
+ARG BRANCH
+RUN git clone -b $BRANCH https://github.com/Affectiva/cpp-sdk-samples.git $SRC_DIR/sdk-samples
+
+#### DOWNLOAD AFFECTIVA AUTO SDK ####
+WORKDIR $SRC_DIR
+ARG AFFECTIVA_AUTO_SDK_2_2_0_URL
+RUN mkdir -p $AUTO_SDK_DIR && cd $AUTO_SDK_DIR &&\
+    wget --quiet $AFFECTIVA_AUTO_SDK_2_2_0_URL  &&\
+    tar -xf affectiva-ics-sdk* && \
+    rm -r $AUTO_SDK_DIR/affectiva-ics-*.tar.gz
+
+#### BUILD SAMPLE APPS FOR VISION ####
+RUN mkdir -p $VISION_BUILD_DIR &&\
+    cd $VISION_BUILD_DIR &&\
+    cmake -DAFFECTIVA_SDK_DIR=$AUTO_SDK_DIR $SRC_DIR/sdk-samples/vision -DBOOST_ROOT=${AFFECTIVA_BOOST} \
+       -DOpenCV_DIR=${AFFECTIVA_OPENCV}/sdk/native/jni \
+       -DCMAKE_CXX_FLAGS="-ftemplate-depth-750 -fvisibility-inlines-hidden -std=c++11 -pthread -Oz" \
+       -DAffectivaVision_INCLUDE_DIR=$AUTO_SDK_DIR/include \
+       -DAffectivaVision_LIBRARY=$AUTO_SDK_DIR/lib/arm64-v8a/libaffectiva-vision.so \
+       -DTFlite_DIR=${TFlite_DIR} \
+       -DTFlite_LIBRARY=${TFlite_DIR}/libtensorflowlite.so  -DBoost_COMPILER=-clang  -DANDROID_TOOLCHAIN=clang \
+       -DBoost_LIBRARY_DIR=${AFFECTIVA_BOOST}/lib \
+       -DBoost_INCLUDE_DIR=${AFFECTIVA_BOOST}/include/boost-1_63 \
+       -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake \
+       -DANDROID_NDK=${ANDROID_NDK_HOME} \
+       -DANDROID_NATIVE_API_LEVEL=${ANDROID_API} \
+       -DANDROID_TOOLCHAIN_NAME=${TOOLCHAIN}  \
+       -DCMAKE_EXE_LINKER_FLAGS="-L${FFMPEG_LIB_PATH} -lavcodec -lavformat -lavutil -lswscale -L${NDK_LIB} -lz" \
+       -DCMAKE_SHARED_LINKER_FLAGS="-L$FFMPEG_LIB_PATH -Wl,-Bsymbolic -lavcodec -lavformat -lavutil -lswscale -L${NDK_LIB} -lc -lm -ldl -llog -lz" && \
+    make -j$(nproc) > /dev/null
+
+#### CREATE THE ARTIFACT ####
+WORKDIR $ARTIFACT_DIR
+RUN mkdir -p $ARTIFACT_DIR &&\
+    cp -R $AUTO_SDK_DIR . &&\
+    cp -R $BUILD_DIR . &&\
+    tar -cf ../testapp-artifact.tar.gz .
+
+WORKDIR $ARTIFACT_DIR
+
