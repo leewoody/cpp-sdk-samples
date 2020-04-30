@@ -179,7 +179,7 @@ macro(CONFIG_COMPILER_11)
     elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         if (CMAKE_SYSTEM_NAME MATCHES "Emscripten")
             status("Updating compiler to make use of C++11")
-            set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -Oz -fno-vectorize")
+            set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -O2 -fno-vectorize")
             set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -O0 -fno-vectorize")
             set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS} ${CXX_COMPILER_WARNINGS}")
         else()
@@ -233,11 +233,6 @@ endmacro()
 
 macro(ADD_TFLITE proj)
     FIND_AND_ADD_LIB(${proj} TFlite)
-
-    # TFlite dependencies
-    # Flatbuffers
-    #find_package(Flatbuffer REQUIRED)
-    #list( APPEND ${proj}_INCLUDE_DIRS ${Flatbuffer_INCLUDE_DIRS} )
 endmacro()
 
 # Setup install locations
