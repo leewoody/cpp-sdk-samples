@@ -46,6 +46,10 @@ endif ()
 set(AffectivaVision_DIR ${AFFECTIVA_SDK_DIR})
 FIND_AND_ADD_LIB(${rootProject} AffectivaVision)
 
+status("")
+ADD_TFLITE(${rootProject})
+
+
 # --------------------
 # SUBPROJECTS
 # --------------------
@@ -79,6 +83,12 @@ foreach (lib ${OpenCV_LIBRARIES})
         endif ()
     endforeach ()
 endforeach ()
+
+status("")
+status("TFlite_DIR = ${AFFECTIVA_SDK_DIR}/lib/arm64-v8")
+foreach (lib ${TFlite_LIBRARIES})
+    status("  - ${lib}")
+endforeach (lib)
 
 status("")
 status("Apps identified for building:")

@@ -229,6 +229,12 @@ macro(ADD_BOOST proj)
     list( APPEND ${proj}_LIBS ${Boost_LIBRARIES})
 endmacro()
 
+
+
+macro(ADD_TFLITE proj)
+    FIND_AND_ADD_LIB(${proj} TFlite)
+endmacro()
+
 # Setup install locations
 macro(SETUP_INSTALL_DIRS)
     if( NOT RUNTIME_INSTALL_DIRECTORY )

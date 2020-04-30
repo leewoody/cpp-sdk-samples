@@ -31,7 +31,7 @@ public:
         return results_.size();
     }
 
-    unsigned int getProcessedFrames() {
+    int getProcessedFrames() {
         return processed_frames_;
     }
 
@@ -53,6 +53,41 @@ public:
 
     virtual void reset() = 0;
 
+    void drawRecentFrame() {
+        if (draw_display_) {
+            if (most_recent_frame_.getTimestamp() - time_callback_received_ <= timeout_) {
+                draw(latest_data_.second, most_recent_frame_);
+                if (logging_enabled_) {
+                    std::cout << "annotating most recent timestamp: " << most_recent_frame_.getTimestamp()
+                              << " with latest data timestamp: " << latest_data_.first.getTimestamp()
+                              << " data size: " << latest_data_.second.size() << std::endl;
+                }
+            }
+            else {
+                draw({}, most_recent_frame_);
+                if (logging_enabled_) {
+                    std::cout << "skipping annotation for timestamp: " << most_recent_frame_.getTimestamp()
+                        << " latest data timestamp: " << latest_data_.first.getTimestamp()
+                        << " data size: " << latest_data_.second.size() << std::endl;
+                }
+            }
+        }
+    }
+
+    void processResults(const vision::Frame& frame) {
+        most_recent_frame_ = frame;
+        if (getDataSize() > 0) {
+            time_callback_received_ = most_recent_frame_.getTimestamp();
+            if (logging_enabled_) {
+                std::cout << "received a new callback before incoming frame at timestamp: " << time_callback_received_ << std::endl;
+            }
+            processResults();
+        }
+        else {
+            drawRecentFrame();
+        }
+    }
+
 protected:
     using frame_type_id_pair = std::pair<vision::Frame, std::map<vision::Id, T>>;
     std::ofstream& out_stream_;
@@ -65,6 +100,10 @@ protected:
     std::deque<frame_type_id_pair> results_;
     Timestamp process_last_ts_;
     bool draw_display_;
-    unsigned int processed_frames_;
+    int processed_frames_;
     bool logging_enabled_;
+    frame_type_id_pair latest_data_;
+    vision::Frame most_recent_frame_;
+    Timestamp time_callback_received_ = 0;
+    Duration timeout_ = 500;
 };
