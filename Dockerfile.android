@@ -20,7 +20,7 @@
 # Then from the shell, run the following for the webcam demo:
 # $ /opt/testapp-artifact/build/vision/bin/frame-detector-webcam-demo -d $AUTO_SDK_DIR/data/
 
-FROM affectiva/android:6b4db79
+FROM affectiva/android:e3807f6
 
 # options
 ENV TOOLCHAIN aarch64-linux-android-4.9
