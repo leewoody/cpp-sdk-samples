@@ -1,6 +1,5 @@
 #include "Visualizer.h"
 #include "AffectivaLogo.h"
-#include "PlottingObjectListener.h"
 
 #include <opencv2/highgui/highgui.hpp>
 #include <iomanip>
@@ -243,57 +242,6 @@ void Visualizer::drawOccupantMetrics(const affdex::vision::Occupant& occupant) {
     drawText("Region Confidence", match_confidence, cv::Point(occupant.boundingBox.getTopLeft().x, padding -= spacing),
              false);
     drawText("Region " + id, region_type, cv::Point(occupant.boundingBox.getTopLeft().x, padding -= spacing), false);
-}
-
-void Visualizer::drawObjectMetrics(const affdex::vision::Object& object) {
-
-    // Draw object bounding box
-    auto bbox = {object.boundingBox.getTopLeft(), object.boundingBox.getBottomRight()};
-
-    //default color ==GRAY
-    cv::Scalar color(128, 128, 128);
-    if (object.type == Object::Type::PHONE) {
-        //phone color == YELLOW
-        color = {0, 255, 255};
-    }
-    else if (object.type == Object::Type::CHILD_SEAT) {
-        //child seat color == RED
-        color = {0, 0, 255};
-    }
-
-    //Configured area region;
-    drawBoundingBox(bbox, color);
-
-    for (const auto& o : object.matchedRegions) {
-        drawPolygon(o.cabinRegion.vertices, {255, 255, 255});
-    }
-
-    int padding = object.boundingBox.getTopLeft().y; //Top left Y
-
-    drawText("Type", PlottingObjectListener::typeToString(object.type), cv::Point(object.boundingBox.getTopLeft().x,
-                                                                                  padding -=
-                                                                                      spacing),
-             false);
-
-    const std::string id(std::to_string(object.matchedRegions[0].cabinRegion.id));
-    const std::string
-        region_type(affdex::vision::CabinRegion::typeToString(object.matchedRegions[0].cabinRegion.type));
-
-    const std::string confidence(std::to_string(object.confidence));
-    const std::string regions_confidence(std::to_string(object.matchedRegions[0].matchConfidence));
-
-
-    drawText("Object Confidence",
-             confidence,
-             cv::Point(object.boundingBox.getTopLeft().x, padding -= spacing),
-             false);
-
-    drawText("Region Confidence",
-             regions_confidence,
-             cv::Point(object.boundingBox.getTopLeft().x, padding -= spacing),
-             false);
-
-    drawText("Region " + id, region_type, cv::Point(object.boundingBox.getTopLeft().x, padding -= spacing), false);
 }
 
 void Visualizer::drawClassifierOutput(const std::string& classifier,

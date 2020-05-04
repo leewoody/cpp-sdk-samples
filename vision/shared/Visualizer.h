@@ -3,7 +3,6 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <Face.h>
 #include "Occupant.h"
-#include "Object.h"
 #include <set>
 
 //Plot the face metrics using opencv highgui
@@ -38,9 +37,6 @@ public:
 
     //Draw occupant related metrics
     void drawOccupantMetrics(const affdex::vision::Occupant& occupant);
-
-    //Draw object related metrics
-    void drawObjectMetrics(const affdex::vision::Object& object);
 
     //ShowImage displays image on screen for specified interval
     void showImage(int interval = 5);

@@ -1,5 +1,4 @@
 #include "PlottingImageListener.h"
-#include "PlottingObjectListener.h"
 #include "PlottingOccupantListener.h"
 #include "StatusListener.h"
 #include "VideoReader.h"
@@ -27,7 +26,6 @@ namespace po = boost::program_options; // abbreviate namespace
 struct ProgramOptions {
     enum DetectionType {
         FACE,
-        OBJECT,
         OCCUPANT
     };
     // cmd line args
@@ -75,61 +73,7 @@ void assembleProgramOptions(po::options_description& description, ProgramOptions
         ("quiet,q",
          po::bool_switch(&program_options.disable_logging)->default_value(false),
          "Disable logging to console")
-        ("object", "Enable object detection")
         ("occupant", "Enable occupant detection");
-}
-
-void processObjectVideo(vision::SyncFrameDetector& detector, std::ofstream& csv_file_stream,
-                        ProgramOptions& program_options) {
-
-    // configure the Detector by enabling features
-    detector.enable({vision::Feature::CHILD_SEATS, vision::Feature::PHONES});
-
-    // prepare listeners
-    PlottingObjectListener object_listener(csv_file_stream,
-                                           program_options.draw_display,
-                                           !program_options.disable_logging,
-                                           program_options.draw_id,
-                                           {{vision::Feature::CHILD_SEATS, 1000}, {vision::Feature::PHONES, 1000}},
-                                           detector.getCabinRegionConfig().getRegions());
-    StatusListener status_listener;
-
-    // configure the Detector by assigning listeners
-    detector.setObjectListener(&object_listener);
-    detector.setProcessStatusListener(&status_listener);
-
-    // start the detector
-    detector.start();
-
-    do {
-        // the VideoReader will handle decoding frames from the input video file
-        VideoReader video_reader(program_options.input_video_path, program_options.sampling_frame_rate);
-
-        cv::Mat mat;
-        Timestamp timestamp_ms;
-        while (video_reader.GetFrame(mat, timestamp_ms)) {
-            // create a Frame from the video input and process it with the Detector
-            vision::Frame
-                f(mat.size().width, mat.size().height, mat.data, vision::Frame::ColorFormat::BGR, timestamp_ms);
-            detector.process(f);
-            object_listener.processResults(f);
-            //To save output video file
-            if (program_options.write_video) {
-                program_options.output_video << object_listener.getImageData();
-            }
-        }
-
-        cout << "******************************************************************\n"
-             << "Percent of samples w/objects present: " << object_listener.getSamplesWithObjectsPercent() << "%"
-             << endl
-             << "Object types detected: " << object_listener.getObjectTypesDetected() << endl
-             << "Objects detected in regions " << object_listener.getObjectRegionsDetected() << endl
-             << "Object callback interval: " << object_listener.getCallBackInterval() << endl
-             << "******************************************************************\n";
-
-        detector.reset();
-        object_listener.reset();
-    } while (program_options.loop);
 }
 
 void processOccupantVideo(vision::SyncFrameDetector& detector, std::ofstream& csv_file_stream,
@@ -260,20 +204,8 @@ int main(int argsc, char** argsv) {
     //To set CSV file's suffix
     std::string detection_type_str;
 
-    //Check for object or occupant argument present or not. If nothing is present then enable face by default.
-
-    if (args.count("object") && args.count("occupant")) {
-        std::cerr << "Can't turn on Object and occupant detection\n";
-        std::cerr << "ERROR: Can't use --occupant and --object at the same time\n\n";
-        std::cerr << "For help, use the -h option.\n\n";
-        return 1;
-    }
-    else if (args.count("object")) {
-        std::cout << "Setting up object detection\n";
-        program_options.detection_type = program_options.OBJECT;
-        detection_type_str = "_objects";
-    }
-    else if (args.count("occupant")) {
+    //if occupant arg is present then occupant feature is turned on, else face feature is activate by default.
+    if (args.count("occupant")) {
         std::cout << "Setting up occupant detection\n";
         program_options.detection_type = program_options.OCCUPANT;
         detection_type_str = "_occupants";
@@ -343,9 +275,6 @@ int main(int argsc, char** argsv) {
         }
 
         switch (program_options.detection_type) {
-            case program_options.OBJECT:
-                processObjectVideo(*detector, csv_file_stream, program_options);
-                break;
             case program_options.OCCUPANT:
                 processOccupantVideo(*detector, csv_file_stream, program_options);
                 break;

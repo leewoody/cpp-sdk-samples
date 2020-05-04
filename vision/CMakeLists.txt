@@ -54,7 +54,6 @@ ADD_TFLITE(${rootProject})
 # SUBPROJECTS
 # --------------------
 
-add_subdirectory(frame-detector-webcam-demo)
 add_subdirectory(frame-detector-video-demo)
 
 # --------------------

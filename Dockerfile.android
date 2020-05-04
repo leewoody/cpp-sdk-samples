@@ -8,17 +8,6 @@
 # run this container interactively:
 # $ docker run -it --rm affectiva-auto:v2.2.0-ics-qc
 #
-# running the webcam or mic demos interactively requires some privileges, devices, and access to the X11 socket:
-# $ docker run -it --privileged --rm --net=host \
-#        -v /tmp/.X11-unix:/tmp/.X11-unix  \
-#        -v $XAUTHORITY:/root/.Xauthority \
-#        -e DISPLAY=$DISPLAY     \
-#        --device=/dev/video0 \
-#        --device=/dev/snd \
-#        affectiva-auto:v2.2.0-ics-qc
-#
-# Then from the shell, run the following for the webcam demo:
-# $ /opt/testapp-artifact/build/vision/bin/frame-detector-webcam-demo -d $AUTO_SDK_DIR/data/
 
 FROM affectiva/android:e3807f6
 
