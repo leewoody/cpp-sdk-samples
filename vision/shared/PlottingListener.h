@@ -57,19 +57,9 @@ public:
         if (draw_display_) {
             if (most_recent_frame_.getTimestamp() - time_callback_received_ <= timeout_) {
                 draw(latest_data_.second, most_recent_frame_);
-                if (logging_enabled_) {
-                    std::cout << "annotating most recent timestamp: " << most_recent_frame_.getTimestamp()
-                              << " with latest data timestamp: " << latest_data_.first.getTimestamp()
-                              << " data size: " << latest_data_.second.size() << std::endl;
-                }
             }
             else {
                 draw({}, most_recent_frame_);
-                if (logging_enabled_) {
-                    std::cout << "skipping annotation for timestamp: " << most_recent_frame_.getTimestamp()
-                        << " latest data timestamp: " << latest_data_.first.getTimestamp()
-                        << " data size: " << latest_data_.second.size() << std::endl;
-                }
             }
         }
     }
@@ -78,9 +68,6 @@ public:
         most_recent_frame_ = frame;
         if (getDataSize() > 0) {
             time_callback_received_ = most_recent_frame_.getTimestamp();
-            if (logging_enabled_) {
-                std::cout << "received a new callback before incoming frame at timestamp: " << time_callback_received_ << std::endl;
-            }
             processResults();
         }
         else {
