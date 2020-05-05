@@ -22,12 +22,7 @@ ENV VISION_BUILD_DIR /opt/build/vision
 ENV ARTIFACT_DIR /opt/testapp-artifact
 ENV AUTO_SDK_DIR $SRC_DIR/affectiva-ics-sdk-android-arm64-2.2.0-qc
 ENV FFMPEG_LIB_PATH ${AFFECTIVA_FFMPEG}/lib
-ENV LD_LIBRARY_PATH ${NDK_LIB}:${AUTO_SDK_DIR}/lib/arm64-v8a
-ENV LIBRARY_PATH ${NDK_LIB}:${AUTO_SDK_DIR}/lib/arm64-v8a:${AFFECTIVA_FFMPEG}/lib
-
-# deps
-ENV Boost_DIR ${AFFECTIVA_BOOST}
-ENV TFlite_DIR ${AUTO_SDK_DIR}/lib/arm64-v8a
+ENV AFFECTIVA_SDK_LIB ${AUTO_SDK_DIR}/lib/arm64-v8a
 
 #################################
 ###### Clone Sample App Repo ######
@@ -47,22 +42,18 @@ RUN mkdir -p $AUTO_SDK_DIR && cd $AUTO_SDK_DIR &&\
 #### BUILD SAMPLE APPS FOR VISION ####
 RUN mkdir -p $VISION_BUILD_DIR &&\
     cd $VISION_BUILD_DIR &&\
-    cmake -DAFFECTIVA_SDK_DIR=$AUTO_SDK_DIR $SRC_DIR/sdk-samples/vision -DBOOST_ROOT=${AFFECTIVA_BOOST} \
-       -DOpenCV_DIR=${AFFECTIVA_OPENCV}/sdk/native/jni \
-       -DCMAKE_CXX_FLAGS="-ftemplate-depth-750 -fvisibility-inlines-hidden -std=c++11 -pthread -Oz" \
-       -DAffectivaVision_INCLUDE_DIR=$AUTO_SDK_DIR/include \
-       -DAffectivaVision_LIBRARY=$AUTO_SDK_DIR/lib/arm64-v8a/libaffectiva-vision.so \
-       -DTFlite_DIR=${TFlite_DIR} \
-       -DTFlite_LIBRARY=${TFlite_DIR}/libtensorflowlite.so  -DBoost_COMPILER=-clang  -DANDROID_TOOLCHAIN=clang \
-       -DBoost_LIBRARY_DIR=${AFFECTIVA_BOOST}/lib \
-       -DBoost_INCLUDE_DIR=${AFFECTIVA_BOOST}/include/boost-1_63 \
-       -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake \
-       -DANDROID_NDK=${ANDROID_NDK_HOME} \
-       -DANDROID_NATIVE_API_LEVEL=${ANDROID_API} \
-       -DANDROID_TOOLCHAIN_NAME=${TOOLCHAIN}  \
-       -DCMAKE_EXE_LINKER_FLAGS="-L${FFMPEG_LIB_PATH} -lavcodec -lavformat -lavutil -lswscale -L${NDK_LIB} -lz" \
-       -DCMAKE_SHARED_LINKER_FLAGS="-L$FFMPEG_LIB_PATH -Wl,-Bsymbolic -lavcodec -lavformat -lavutil -lswscale -L${NDK_LIB} -lc -lm -ldl -llog -lz" && \
-    make -j$(nproc) > /dev/null
+    cmake -DAFFECTIVA_SDK_DIR=$AUTO_SDK_DIR $SRC_DIR/sdk-samples/vision \
+        -DBOOST_ROOT=${AFFECTIVA_BOOST} \
+        -DOpenCV_DIR=${AFFECTIVA_OPENCV}/sdk/native/jni \
+        -DCMAKE_CXX_FLAGS="-std=c++11 -pthread -Oz -fPIC" \
+        -DBoost_COMPILER=-clang \
+        -DANDROID_TOOLCHAIN=clang \
+        -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake \
+        -DANDROID_NDK=${ANDROID_NDK_HOME} \
+        -DANDROID_NATIVE_API_LEVEL=${ANDROID_API} \
+        -DANDROID_TOOLCHAIN_NAME=${TOOLCHAIN}  \
+        -DCMAKE_EXE_LINKER_FLAGS="-Wl,-rpath-link=${AFFECTIVA_SDK_LIB} -L${FFMPEG_LIB_PATH} -lavcodec -lavformat -lavutil -lswscale -L${NDK_LIB} -lz" &&\
+        make -j$(nproc) > /dev/null
 
 #### CREATE THE ARTIFACT ####
 WORKDIR $ARTIFACT_DIR

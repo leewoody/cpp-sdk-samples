@@ -229,11 +229,19 @@ macro(ADD_BOOST proj)
     list( APPEND ${proj}_LIBS ${Boost_LIBRARIES})
 endmacro()
 
+macro(CONFIG_CMAKE)
+    set(CMAKE_VERBOSE ON CACHE BOOL "Verbose mode")
 
-
-macro(ADD_TFLITE proj)
-    FIND_AND_ADD_LIB(${proj} TFlite)
+    # Setting this to BOTH since we want to honor the sysroot and toolchain root
+    # if this is not set then find_path and find_library dont resolve the hint paths
+    if(ANDROID)
+        set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM BOTH)
+        set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY BOTH)
+        set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE BOTH)
+        set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE BOTH)
+    endif()
 endmacro()
+
 
 # Setup install locations
 macro(SETUP_INSTALL_DIRS)

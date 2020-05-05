@@ -1,16 +1,16 @@
 cmake_minimum_required(VERSION 3.0)
 
-set(rootProject vision-samples)
-project(${rootProject})
-
 # load some useful macros
 include(../cmake_modules/Macros.cmake)
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/../cmake_modules")
+
+set(rootProject vision-samples)
+project(${rootProject})
 
 # --------------------
 # CONFIG
 # --------------------
-
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/../cmake_modules")
+CONFIG_CMAKE()
 CONFIG_COMPILER_11()
 CONFIG_LINKER()
 SETUP_INSTALL_DIRS()
@@ -46,9 +46,6 @@ endif ()
 set(AffectivaVision_DIR ${AFFECTIVA_SDK_DIR})
 FIND_AND_ADD_LIB(${rootProject} AffectivaVision)
 
-status("")
-ADD_TFLITE(${rootProject})
-
 
 # --------------------
 # SUBPROJECTS
@@ -82,12 +79,6 @@ foreach (lib ${OpenCV_LIBRARIES})
         endif ()
     endforeach ()
 endforeach ()
-
-status("")
-status("TFlite_DIR = ${AFFECTIVA_SDK_DIR}/lib/arm64-v8")
-foreach (lib ${TFlite_LIBRARIES})
-    status("  - ${lib}")
-endforeach (lib)
 
 status("")
 status("Apps identified for building:")
