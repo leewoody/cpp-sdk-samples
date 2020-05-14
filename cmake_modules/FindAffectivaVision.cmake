@@ -7,7 +7,7 @@ find_path(AffectivaVision_INCLUDE_DIR
 
 find_library(AffectivaVision_LIBRARY
         NAMES affectiva-vision
-        HINTS ${AFFECTIVA_SDK_DIR}/lib/arm64-v8a)
+        HINTS ${AFFECTIVA_SDK_DIR}/lib/arm64-v8a ${AFFECTIVA_SDK_DIR}/lib/)
 
 find_package_handle_standard_args(AffectivaVision DEFAULT_MSG AffectivaVision_INCLUDE_DIR AffectivaVision_LIBRARY)
 

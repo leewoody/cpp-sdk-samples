@@ -9,8 +9,8 @@ class PlottingImageListener : public vision::ImageListener, public PlottingListe
 
 public:
 
-    PlottingImageListener(std::ofstream& csv, bool draw_display, bool enable_logging, bool draw_face_id) :
-        PlottingListener(csv, draw_display, enable_logging), capture_last_ts_(0), process_fps_(0), capture_fps_(0),
+    PlottingImageListener(std::ofstream& csv, bool write_video, bool enable_logging, bool draw_face_id) :
+        PlottingListener(csv, write_video, enable_logging), capture_last_ts_(0), process_fps_(0), capture_fps_(0),
         draw_face_id_(draw_face_id), frames_with_faces_(0) {
         out_stream_ << "TimeStamp,faceId,upperLeftX,upperLeftY,lowerRightX,lowerRightY,confidence,interocularDistance,";
         for (const auto& angle : viz_.HEAD_ANGLES) {
@@ -145,7 +145,6 @@ public:
             viz_.drawFaceMetrics(f, bbox, draw_face_id_);
         }
 
-        viz_.showImage();
         image_data_ = viz_.getImageData();
     }
 
@@ -155,7 +154,7 @@ public:
             vision::Frame frame = dataPoint.first;
             const std::map<vision::FaceId, vision::Face> faces = dataPoint.second;
 
-            if (draw_display_) {
+            if (write_video_) {
                 draw(faces, frame);
             }
 

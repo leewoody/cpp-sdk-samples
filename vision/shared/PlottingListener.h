@@ -16,12 +16,12 @@ using namespace affdex;
 template<typename T> class PlottingListener {
 
 public:
-    PlottingListener(std::ofstream& csv, bool draw_display, bool enable_logging) :
+    PlottingListener(std::ofstream& csv, bool write_video, bool enable_logging) :
         out_stream_(csv),
         image_data_(),
         start_(std::chrono::system_clock::now()),
         process_last_ts_(0),
-        draw_display_(draw_display),
+        write_video_(write_video),
         processed_frames_(0),
         logging_enabled_(enable_logging) {
     }
@@ -54,7 +54,7 @@ public:
     virtual void reset() = 0;
 
     void drawRecentFrame() {
-        if (draw_display_) {
+        if (write_video_) {
             if (most_recent_frame_.getTimestamp() - time_callback_received_ <= timeout_) {
                 draw(latest_data_.second, most_recent_frame_);
             }
@@ -86,7 +86,7 @@ protected:
 
     std::deque<frame_type_id_pair> results_;
     Timestamp process_last_ts_;
-    bool draw_display_;
+    bool write_video_;
     int processed_frames_;
     bool logging_enabled_;
     frame_type_id_pair latest_data_;

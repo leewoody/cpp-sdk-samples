@@ -9,9 +9,9 @@ class PlottingOccupantListener : public vision::OccupantListener, public Plottin
 
 public:
 
-    PlottingOccupantListener(std::ofstream& csv, bool draw_display, bool enable_logging, bool draw_occupant_id, const
+    PlottingOccupantListener(std::ofstream& csv, bool write_video, bool enable_logging, bool draw_occupant_id, const
     Duration callback_interval, std::vector<vision::CabinRegion> cabin_regions) :
-        PlottingListener(csv, draw_display, enable_logging), callback_interval_(callback_interval),
+        PlottingListener(csv, write_video, enable_logging), callback_interval_(callback_interval),
         cabin_regions_(std::move(cabin_regions)), draw_occupant_id_(draw_occupant_id), frames_with_occupants_(0) {
         out_stream_ << "TimeStamp, occupantId, confidence, regionId,  upperLeftX, upperLeftY, lowerRightX, lowerRightY";
 
@@ -88,7 +88,6 @@ public:
             }
         }
 
-        viz_.showImage();
         image_data_ = viz_.getImageData();
     }
     using PlottingListener::processResults; // make the overload taking a Frame arg visible

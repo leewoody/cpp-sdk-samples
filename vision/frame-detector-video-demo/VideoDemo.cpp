@@ -33,7 +33,6 @@ struct ProgramOptions {
     affdex::Path input_video_path;
     affdex::Path output_video_path;
     unsigned int sampling_frame_rate;
-    bool draw_display;
     unsigned int num_faces;
     bool loop = false;
     bool draw_id = false;
@@ -63,7 +62,6 @@ void assembleProgramOptions(po::options_description& description, ProgramOptions
         ("sfps",
          po::value<unsigned int>(&program_options.sampling_frame_rate)->default_value(15),
          "Input sampling frame rate. Default is 0, which means the app will respect the video's FPS and read all frames")
-        ("draw", po::value<bool>(&program_options.draw_display)->default_value(true), "Draw video on screen.")
         ("numFaces", po::value<unsigned int>(&program_options.num_faces)->default_value(5), "Number of faces to be "
                                                                                             "tracked.")
         ("loop", po::bool_switch(&program_options.loop)->default_value(false), "Loop over the video being processed.")
@@ -83,7 +81,7 @@ void processOccupantVideo(vision::SyncFrameDetector& detector, std::ofstream& cs
     detector.enable(vision::Feature::OCCUPANTS);
 
     // prepare listeners
-    PlottingOccupantListener occupant_listener(csv_file_stream, program_options.draw_display, !program_options
+    PlottingOccupantListener occupant_listener(csv_file_stream, program_options.write_video, !program_options
         .disable_logging, program_options.draw_id, 500, detector.getCabinRegionConfig().getRegions());
     StatusListener status_listener;
 
@@ -132,7 +130,7 @@ void processFaceVideo(vision::SyncFrameDetector& detector,
                      vision::Feature::APPEARANCES});
 
     // prepare listeners
-    PlottingImageListener image_listener(csv_file_stream, program_options.draw_display,
+    PlottingImageListener image_listener(csv_file_stream, program_options.write_video,
                                          !program_options.disable_logging, program_options.draw_id);
     StatusListener status_listener;
 
@@ -228,8 +226,8 @@ int main(int argsc, char** argsv) {
     // set data_dir to env_var if not set on cmd line
     program_options.data_dir = validatePath(program_options.data_dir, DATA_DIR_ENV_VAR);
 
-    if (program_options.draw_id && !program_options.draw_display) {
-        std::cerr << "Can't draw face id while drawing to screen is disabled\n";
+    if (program_options.draw_id && !program_options.write_video) {
+        std::cerr << "Can't draw face id while output video is not specified\n";
         std::cerr << description << std::endl;
         return 1;
     }
@@ -269,7 +267,7 @@ int main(int argsc, char** argsv) {
                 }
             }
             else {
-                std::cerr << "Issue with passed input video: " << program_options.output_video_path << std::endl;
+                std::cerr << "Issue with passed input video: " << program_options.input_video_path << std::endl;
                 return 1;
             }
         }
