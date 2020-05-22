@@ -124,8 +124,7 @@ public:
     }
 
     void draw(const std::map<vision::FaceId, vision::Face>& faces, const vision::Frame& image) override {
-        std::shared_ptr<unsigned char> imgdata = image.getBGRByteArray();
-        const cv::Mat img = cv::Mat(image.getHeight(), image.getWidth(), CV_8UC3, imgdata.get());
+        const cv::Mat img = *(image.getImage());
         viz_.updateImage(img);
 
         for (const auto& face_id_pair : faces) {
@@ -162,8 +161,6 @@ public:
 
             if (logging_enabled_) {
                 std::cout << "timestamp: " << frame.getTimestamp()
-                          << " cfps: " << getCaptureFrameRate()
-                          << " pfps: " << getProcessingFrameRate()
                           << " faces: " << faces.size() << std::endl;
             }
         }
