@@ -18,7 +18,7 @@ SETUP_INSTALL_DIRS()
 # SUPRRESS DEPRECATION WARNINGS 
 add_compile_options(-Wno-deprecated -Wno-deprecated-declarations)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread ")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread ")
 
 # --------------------
 # DEPENDENCIES
