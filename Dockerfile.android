@@ -1,15 +1,17 @@
 # A Docker file to be used for building the sample applications for the Android SDK(Qualcomm Board) using Ubuntu 18.04
 #
 # build:
-# $ docker build -f Dockerfile.android --build-arg AFFECTIVA_AUTO_SDK_2_2_0_QC_URL=$AFFECTIVA_AUTO_SDK_2_2_0_QC_URL --build-arg BRANCH=$BRANCH --tag=affectiva-auto:v2.2.0-ics-qc .
+# $ export GIT_DESCRIBE="$(git rev-parse HEAD)"
+# $ docker build -f Dockerfile.android --build-arg AFFECTIVA_ICS_SDK_URL=<download URL> --build-arg BRANCH=<branch of this repo> --tag=affectiva:ics-sdk-$GIT_DESCRIBE .
 #
 # the result will be an image that has the tar'ed artifact of the sample app and all of its dependencies installed
 #
-# run this container interactively:
-# $ docker run -it --rm affectiva-auto:v2.2.0-ics-qc
+# run this container interactively :
+# $ docker run -it --rm affectiva:ics-sdk-$GIT_DESCRIBE
 #
 
-FROM affectiva/android:e3807f6
+
+FROM affectiva/android:6f12ac8
 
 # options
 ENV TOOLCHAIN aarch64-linux-android-4.9
@@ -17,12 +19,11 @@ ENV ANDROID_API android-28
 ENV NDK_LIB ${ANDROID_NDK_HOME}/platforms/${ANDROID_API}/arch-arm64/usr/lib
 
 ENV SRC_DIR /opt/src
-ENV BUILD_DIR /opt/build
-ENV VISION_BUILD_DIR /opt/build/vision
+ENV VISION_BUILD_DIR /opt/build
 ENV ARTIFACT_DIR /opt/testapp-artifact
-ENV AUTO_SDK_DIR $SRC_DIR/affectiva-ics-sdk-android-arm64-2.2.0-qc
+ENV AFFECTIVA_ICS_SDK_DIR $SRC_DIR/affectiva-ics-sdk
 ENV FFMPEG_LIB_PATH ${AFFECTIVA_FFMPEG}/lib
-ENV AFFECTIVA_SDK_LIB ${AUTO_SDK_DIR}/lib/arm64-v8a
+ENV AFFECTIVA_ICS_SDK_LIB ${AFFECTIVA_ICS_SDK_DIR}/lib/arm64-v8a
 
 #################################
 ###### Clone Sample App Repo ######
@@ -31,36 +32,39 @@ ENV AFFECTIVA_SDK_LIB ${AUTO_SDK_DIR}/lib/arm64-v8a
 ARG BRANCH
 RUN git clone -b $BRANCH https://github.com/Affectiva/cpp-sdk-samples.git $SRC_DIR/sdk-samples
 
-#### DOWNLOAD AFFECTIVA AUTO SDK ####
+#### DOWNLOAD AFFECTIVA ICS SDK ####
 WORKDIR $SRC_DIR
-ARG AFFECTIVA_AUTO_SDK_2_2_0_QC_URL
-RUN mkdir -p $AUTO_SDK_DIR && cd $AUTO_SDK_DIR &&\
-    wget --quiet $AFFECTIVA_AUTO_SDK_2_2_0_QC_URL  &&\
+ARG AFFECTIVA_ICS_SDK_URL
+RUN mkdir -p $AFFECTIVA_ICS_SDK_DIR && cd $AFFECTIVA_ICS_SDK_DIR &&\
+    wget --quiet $AFFECTIVA_ICS_SDK_URL  &&\
     tar -xf affectiva-ics-sdk* && \
-    rm -r $AUTO_SDK_DIR/affectiva-ics-*.tar.gz
+    rm -r $AFFECTIVA_ICS_SDK_DIR/affectiva-ics-*.tar.gz
 
-#### BUILD SAMPLE APPS FOR VISION ####
+#### BUILD SAMPLE APP FOR VISION ####
 RUN mkdir -p $VISION_BUILD_DIR &&\
     cd $VISION_BUILD_DIR &&\
-    cmake -DAFFECTIVA_SDK_DIR=$AUTO_SDK_DIR $SRC_DIR/sdk-samples/vision \
+    cmake -DAFFECTIVA_SDK_DIR=$AFFECTIVA_ICS_SDK_DIR \
+        -DCMAKE_INSTALL_PREFIX=${ARTIFACT_DIR} \
         -DBOOST_ROOT=${AFFECTIVA_BOOST} \
         -DOpenCV_DIR=${AFFECTIVA_OPENCV}/sdk/native/jni \
-        -DCMAKE_CXX_FLAGS="-std=c++11 -pthread -Oz -fPIC" \
         -DBoost_COMPILER=-clang \
         -DANDROID_TOOLCHAIN=clang \
         -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake \
         -DANDROID_NDK=${ANDROID_NDK_HOME} \
         -DANDROID_NATIVE_API_LEVEL=${ANDROID_API} \
         -DANDROID_TOOLCHAIN_NAME=${TOOLCHAIN}  \
-        -DCMAKE_EXE_LINKER_FLAGS="-Wl,-rpath-link=${AFFECTIVA_SDK_LIB} -L${FFMPEG_LIB_PATH} -lavcodec -lavformat -lavutil -lswscale -L${NDK_LIB} -lz" &&\
-        make -j$(nproc) > /dev/null
+        -DCMAKE_EXE_LINKER_FLAGS="-Wl,-rpath-link=${AFFECTIVA_ICS_SDK_LIB} -L${FFMPEG_LIB_PATH} -lavcodec -lavformat -lavutil -lswscale -L${NDK_LIB} -lz" \
+        $SRC_DIR/sdk-samples/vision &&\
+        make -j$(nproc) install > /dev/null
 
 #### CREATE THE ARTIFACT ####
 WORKDIR $ARTIFACT_DIR
 RUN mkdir -p $ARTIFACT_DIR &&\
-    cp -R $AUTO_SDK_DIR . &&\
-    cp -R $BUILD_DIR . &&\
-    tar -cf ../testapp-artifact.tar.gz .
+    cd $ARTIFACT_DIR &&\
+    cp -R $AFFECTIVA_ICS_SDK_DIR/*/ . &&\
+    cp $AFFECTIVA_BOOST/lib/*.so* ./lib/arm64-v8a &&\
+    cp -r $AFFECTIVA_FFMPEG/lib/*so* ./lib/arm64-v8a &&\
+    tar -czf ../testapp-artifact.tar.gz *
 
 WORKDIR $ARTIFACT_DIR
 
