@@ -1,13 +1,13 @@
-# A Docker file to be used for building the sample applications for the Android SDK(Qualcomm Board) using Ubuntu 18.04
+# A Docker file to be used for building the sample applications for the Android SDK (Qualcomm Board) using Ubuntu 18.04
 #
 # build:
-# $ export GIT_DESCRIBE="$(git rev-parse HEAD)"
-# $ docker build -f Dockerfile.android --build-arg AFFECTIVA_ICS_SDK_URL=<download URL> --build-arg BRANCH=<branch of this repo> --tag=affectiva:ics-sdk-$GIT_DESCRIBE .
+# $ export GIT_COMMIT="$(git rev-parse HEAD)"
+# $ docker build -f Dockerfile.android --build-arg AFFECTIVA_ICS_SDK_URL=<download URL> --build-arg BRANCH=<branch of this repo> --tag=affectiva:ics-sdk-$GIT_COMMIT .
 #
 # the result will be an image that has the tar'ed artifact of the sample app and all of its dependencies installed
 #
 # run this container interactively :
-# $ docker run -it --rm affectiva:ics-sdk-$GIT_DESCRIBE
+# $ docker run -it --rm affectiva:ics-sdk-$GIT_COMMIT
 #
 
 

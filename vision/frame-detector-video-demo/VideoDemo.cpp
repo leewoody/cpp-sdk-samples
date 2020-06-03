@@ -239,8 +239,9 @@ int main(int argsc, char** argsv) {
         detector = std::make_shared<vision::SyncFrameDetector>(program_options.data_dir, program_options.num_faces);
 
         //initialize the output file
-        std::string
-            csv_path_new = (program_options.input_video_path.substr(0, program_options.input_video_path.find('.', 0)));
+        boost::filesystem::path pathObj(program_options.input_video_path);
+
+        std::string csv_path_new = pathObj.stem().string();
         csv_path_new += detection_type_str + ".csv";
         boost::filesystem::path csv_path(csv_path_new);
         std::ofstream csv_file_stream(csv_path.c_str());
