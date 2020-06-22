@@ -106,8 +106,7 @@ public:
     }
 
     void draw(const std::map<ObjectId, Object>& objects, const vision::Frame& image) override {
-        std::shared_ptr<unsigned char> img_data = image.getBGRByteArray();
-        const cv::Mat img = cv::Mat(image.getHeight(), image.getWidth(), CV_8UC3, img_data.get());
+        const cv::Mat img = *(image.getImage());
         viz_.updateImage(img);
 
         for (const auto& id_object_pair : objects) {

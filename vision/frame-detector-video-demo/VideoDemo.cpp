@@ -50,11 +50,11 @@ void assembleProgramOptions(po::options_description& description, ProgramOptions
     description.add_options()
         ("help,h", po::bool_switch()->default_value(false), "Display this help message.")
 #ifdef _WIN32
-    ("data,d", po::wvalue<affdex::Path>(&program_options.data_dir),
-        std::string("Path to the data folder. Alternatively, specify the path via the environment variable "
-            + DISPLAY_DATA_DIR_ENV_VAR + R"(=\path\to\data)").c_str())
-    ("input,i", po::wvalue<affdex::Path>(&program_options.input_video_path)->required(), "Video file to processs")
-    ("output,o", po::wvalue<affdex::Path>(&program_options.output_video_path), "Output video path.")
+        ("data,d", po::wvalue<affdex::Path>(&program_options.data_dir),
+            std::string("Path to the data folder. Alternatively, specify the path via the environment variable "
+                + DISPLAY_DATA_DIR_ENV_VAR + R"(=\path\to\data)").c_str())
+        ("input,i", po::wvalue<affdex::Path>(&program_options.input_video_path)->required(), "Video file to processs")
+        ("output,o", po::wvalue<affdex::Path>(&program_options.output_video_path), "Output video path.")
 #else // _WIN32
         ("data,d", po::value<affdex::Path>(&program_options.data_dir),
          (std::string("Path to the data folder. Alternatively, specify the path via the environment variable ")
@@ -63,7 +63,7 @@ void assembleProgramOptions(po::options_description& description, ProgramOptions
         ("output,o", po::value<affdex::Path>(&program_options.output_video_path), "Output video path.")
 #endif // _WIN32
         ("sfps",
-         po::value<unsigned int>(&program_options.sampling_frame_rate)->default_value(15),
+         po::value<unsigned int>(&program_options.sampling_frame_rate)->default_value(0),
          "Input sampling frame rate. Default is 0, which means the app will respect the video's FPS and read all frames")
         ("draw", po::value<bool>(&program_options.draw_display)->default_value(true), "Draw video on screen.")
         ("numFaces", po::value<unsigned int>(&program_options.num_faces)->default_value(5), "Number of faces to be "
@@ -309,8 +309,10 @@ int main(int argsc, char** argsv) {
         detector = std::make_shared<vision::SyncFrameDetector>(program_options.data_dir, program_options.num_faces);
 
         //initialize the output file
-        std::string
-            csv_path_new = (program_options.input_video_path.substr(0, program_options.input_video_path.find('.', 0)));
+        boost::filesystem::path pathObj(program_options.input_video_path);
+
+        std::string csv_path_new = pathObj.stem().string();
+
         csv_path_new += detection_type_str + ".csv";
         boost::filesystem::path csv_path(csv_path_new);
         std::ofstream csv_file_stream(csv_path.c_str());
@@ -320,24 +322,25 @@ int main(int argsc, char** argsv) {
             return 1;
         }
 
+        //Get resolution and fps from input video
+        int sniffed_fps, frameHeight, frameWidth;
+        VideoReader::SniffResolution(program_options.input_video_path, frameHeight, frameWidth, sniffed_fps);
+        if (program_options.sampling_frame_rate == 0) {
+            // If user did not specify --sfps (i.e. // default of 0), used the sniffed_fps
+            program_options.sampling_frame_rate = sniffed_fps;
+            std::cout << "Using estimated video FPS for output video: " << sniffed_fps;
+        }
+
         //Setup video writer
         if (program_options.write_video) {
-            VideoReader video_reader(program_options.input_video_path, program_options.sampling_frame_rate);
-            cv::Mat mat;
-            Timestamp timestamp_ms;
-            if (video_reader.GetFrameData(mat, timestamp_ms)) {
-                program_options.output_video.open(program_options.output_video_path,
-                                                  CV_FOURCC('D', 'X', '5', '0'),
-                                                  program_options.sampling_frame_rate,
-                                                  cv::Size(mat.size().width, mat.size().height),
-                                                  true);
-                if (!program_options.output_video.isOpened()) {
-                    std::cerr << "Error opening output video: " << program_options.output_video_path << std::endl;
-                    return 1;
-                }
-            }
-            else {
-                std::cerr << "Issue with passed input video: " << program_options.output_video_path << std::endl;
+            program_options.output_video.open(program_options.output_video_path,
+                                              CV_FOURCC('D', 'X', '5', '0'),
+                                              program_options.sampling_frame_rate,
+                                              cv::Size(frameWidth, frameHeight),
+                                              true);
+
+            if (!program_options.output_video.isOpened()) {
+                std::cerr << "Error opening output video: " << program_options.output_video_path << std::endl;
                 return 1;
             }
         }
@@ -351,7 +354,8 @@ int main(int argsc, char** argsv) {
                 break;
             case program_options.FACE:
                 //update the detector accordingly
-                detector = std::make_shared<vision::SyncFrameDetector>(program_options.data_dir, program_options.num_faces);
+                detector =
+                    std::make_shared<vision::SyncFrameDetector>(program_options.data_dir, program_options.num_faces);
                 processFaceVideo(*detector, csv_file_stream, program_options);
                 break;
             default:

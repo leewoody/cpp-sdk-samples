@@ -15,6 +15,9 @@ public:
 
     uint64_t TotalFrames() const;
 
+    static void SniffResolution(const boost::filesystem::path& path, int& height, int& width, int& fps,
+                                const int sampling_frame_rate = 0);
+
 private:
     cv::VideoCapture cap_;
     affdex::Timestamp last_timestamp_ms_ = 0;
