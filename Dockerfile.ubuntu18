@@ -1,12 +1,12 @@
 # A Docker file to be used for building the sample applications for the Linux SDK Ubuntu 16.04
 #
 # build:
-# $ docker build --build-arg AFFECTIVA_AUTO_SDK_URL=$AFFECTIVA_AUTO_SDK_URL --build-arg BRANCH=$BRANCH --tag=affectiva-ics:v2.3.0 .
+# $ docker build --build-arg AFFECTIVA_AUTO_SDK_URL=$AFFECTIVA_AUTO_SDK_URL --build-arg BRANCH=$BRANCH --tag=affectiva:v2.3.0-ics-ubuntu18 .
 #
 # the result will be an image that has the tar'ed artifact of the sample app and all of its dependencies installed
 #
 # run this container interactively:
-# $ docker run -it --rm affectiva-ics:v2.3.0
+# $ docker run -it --rm affectiva:v2.3.0-ics-ubuntu18
 #
 # running the webcam or mic demos interactively requires some privileges, devices, and access to the X11 socket:
 # $ docker run -it --privileged --rm --net=host \
@@ -15,30 +15,28 @@
 #        -e DISPLAY=$DISPLAY     \
 #        --device=/dev/video0 \
 #        --device=/dev/snd \
-#        affectiva-ics:v2.3.0
+#        affectiva:v2.3.0-ics-ubuntu18
 #
 # Then from the shell, run the following for the webcam demo:
 # $ /opt/testapp-artifact/build/vision/bin/frame-detector-webcam-demo -d $AUTO_SDK_DIR/data
+# $ /opt/testapp-artifact/build/vision/bin/frame-detector-video-demo -d /opt/testapp-artifact/affectiva-ics-sdk-2.3
+
+.0/data -i "sample.mp4" --numFaces 5 --draw=0
 #
 # Or, you can check the docker-compose.yml file for options to build and run using docker-compose (recommended)
 
 
-FROM ubuntu:16.04
+FROM 697207770801.dkr.ecr.us-east-1.amazonaws.com/affectiva/ubuntu-18.04:fdf743d-5
 
 RUN apt-get update &&\
     apt-get install -yqq software-properties-common\
-                        git \
                         bc \
                         gfortran \
-                        unzip \
-                        wget \
-                        g++ \
-                        make \
-                        libopencv-dev \
-                        cmake \
                         libsndfile1-dev \
+                        libopencv-dev \
                         portaudio19-dev \
                         alsa-base \
+                        awscli \
                         alsa-utils > /dev/null
 
 ENV SRC_DIR /opt/src
@@ -46,10 +44,10 @@ ENV BUILD_DIR /opt/build
 ENV VISION_BUILD_DIR /opt/build/vision
 ENV SPEECH_BUILD_DIR /opt/build/speech
 ENV ARTIFACT_DIR /opt/testapp-artifact
-ENV AUTO_SDK_DIR $SRC_DIR/affectiva-ics-sdk-2.0.0
+ENV AUTO_SDK_DIR $SRC_DIR/affectiva-ics-sdk-2.3.0
 ENV LD_LIBRARY_PATH $AUTO_SDK_DIR/lib
-ENV LD_PRELOAD /usr/lib/x86_64-linux-gnu/libopencv_core.so.2.4
-ENV AFFECTIVA_VISION_DATA_DIR $AUTO_SDK_DIR/data
+ENV AFFECTIVA_VISION_DATA_DIR $AUTO_SDK_DIR/data/vision
+# ENV LD_PRELOAD /usr/lib/x86_64-linux-gnu/libopencv_core.so.3.2.0
 
 #################################
 ###### Clone Sample App Repo ######
@@ -58,17 +56,6 @@ ENV AFFECTIVA_VISION_DATA_DIR $AUTO_SDK_DIR/data
 ARG BRANCH
 RUN git clone -b $BRANCH https://github.com/Affectiva/cpp-sdk-samples.git $SRC_DIR/sdk-samples
 
-#### BOOST ####
-WORKDIR $SRC_DIR
-RUN wget --quiet https://sourceforge.net/projects/boost/files/boost/1.63.0/boost_1_63_0.tar.gz --no-check-certificate && \
-    tar -xf boost_1_63_0.tar.gz && \
-    rm boost_1_63_0.tar.gz && \
-    cd $SRC_DIR/boost_1_63_0 && \
-    ./bootstrap.sh &&\
-    ./b2 -j $(nproc) cxxflags=-fPIC threading=multi runtime-link=shared \
-         --with-filesystem --with-program_options \
-         install > /dev/null && \
-    rm -rf $SRC_DIR/boost_1_63_0
 
 #### DOWNLOAD AFFECTIVA AUTO SDK ####
 WORKDIR $SRC_DIR
@@ -81,7 +68,7 @@ RUN mkdir -p $AUTO_SDK_DIR && cd $AUTO_SDK_DIR &&\
 #### BUILD SAMPLE APPS FOR VISION ####
 RUN mkdir -p $VISION_BUILD_DIR &&\
     cd $VISION_BUILD_DIR &&\
-    cmake -DOpenCV_DIR=/usr/ -DBOOST_ROOT=/usr/ -DAFFECTIVA_SDK_DIR=$AUTO_SDK_DIR $SRC_DIR/sdk-samples/vision &&\
+    cmake -DOpenCV_DIR=/usr/ -DBOOST_ROOT=$AFFECTIVA_BOOST -DAFFECTIVA_SDK_DIR=$AUTO_SDK_DIR $SRC_DIR/sdk-samples/vision &&\
     make -j$(nproc) > /dev/null
 
 #### CREATE THE ARTIFACT ####

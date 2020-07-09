@@ -9,15 +9,16 @@
 
 version: '3'
 services:
-  ics_2_0:
+  ics_2_2_ubuntu18:
     build: 
       context: cpp-sdk-samples/.
+      dockerfile: Dockerfile.ubuntu18
       args: 
-        - AFFECTIVA_AUTO_SDK_2_0_URL=${AFFECTIVA_AUTO_SDK_2_0_URL} 
+        - AFFECTIVA_AUTO_SDK_URL=${AFFECTIVA_AUTO_SDK_URL} 
         - BRANCH=${BRANCH} 
-    image: affectiva-auto:v2.0-ics
+    image: affectiva-auto:v2.2-ics-ubuntu18
     network_mode: host # need this for X11
-    #privileged: true # need this to access some devices
+    privileged: true # need this to access some devices
     devices:
       - /dev/video0:/dev/video0 # change /dev/video0 with your video device
       - /dev/snd # for speech demo
@@ -30,5 +31,5 @@ services:
 
     
     command: "/opt/testapp-artifact/build/vision/bin/frame-detector-webcam-demo -d /opt/testapp-artifact/affectiva-ics-sdk-2.0.0/data" # you can comment this out to get a bash prompt
-    #command: '/opt/testapp-artifact/build/vision/bin/frame-detector-video-demo -d /opt/testapp-artifact/affectiva-ics-sdk-2.0.0/data -i "sample.mp4" --numFaces 50'
+    # command: '/opt/testapp-artifact/build/vision/bin/frame-detector-video-demo -d /opt/testapp-artifact/affectiva-ics-sdk-2.0.0/data -i "sample.mp4" --numFaces 5 --draw=0'
 

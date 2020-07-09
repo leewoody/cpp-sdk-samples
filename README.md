@@ -10,7 +10,7 @@ Dependencies
 ------------
 
 ##### Linux (x86_64, aarch64)
-- Ubuntu 16.04 with GCC v5.4.1
+- Ubuntu 18.04 with GCC v7.5.0
 - Affectiva's Automotive SDK 1.2
 - CMake 3.5 or higher
 
