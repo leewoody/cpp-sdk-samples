@@ -228,7 +228,6 @@ void Visualizer::drawOccupantMetrics(const affdex::vision::Occupant& occupant) {
     // Draw occupant bounding box
     auto bbox = {occupant.boundingBox.getTopLeft(), occupant.boundingBox.getBottomRight()};
     drawBoundingBox(bbox, {199, 110, 255});
-    drawBodyMetrics(occupant.body->body_points);
 
     //Do not draw if polygon's ID is Unknown
     if (occupant.matchedSeat.cabinRegion.id != REGION_UNKNOWN) {
