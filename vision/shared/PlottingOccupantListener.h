@@ -13,7 +13,8 @@ public:
     Duration callback_interval, std::vector<CabinRegion> cabin_regions) :
         PlottingListener(csv, draw_display, enable_logging), callback_interval_(callback_interval),
         cabin_regions_(std::move(cabin_regions)), draw_occupant_id_(draw_occupant_id), frames_with_occupants_(0) {
-        out_stream_ << "TimeStamp, occupantId, confidence, regionId,  upperLeftX, upperLeftY, lowerRightX, lowerRightY";
+        out_stream_ << "TimeStamp, occupantId, bodyId, confidence, regionId,  upperLeftX, upperLeftY, lowerRightX, "
+                       "lowerRightY";
 
         for (const auto& cr :cabin_regions_) {
             out_stream_ << "," << "Region " << cr.id;
@@ -43,7 +44,7 @@ public:
     void outputToFile(const std::map<vision::OccupantId, vision::Occupant>& occupants, double time_stamp) override {
         if (occupants.empty()) {
             // TimeStamp occupantId confidence regionId upperLeftX upperLeftY lowerRightX lowerRightY"
-            out_stream_ << time_stamp << ",nan,nan,nan,nan,nan,nan,nan";
+            out_stream_ << time_stamp << ",nan,nan,nan,nan,nan,nan,nan,nan";
             for (const auto& cr :cabin_regions_) {
                 out_stream_ << ",nan";
             }
@@ -55,7 +56,7 @@ public:
             std::vector<vision::Point> bbox({occup.boundingBox.getTopLeft(), occup.boundingBox.getBottomRight()});
 
             out_stream_ << time_stamp << ","
-                        << occupant_id_pair.first << ","
+                        << occupant_id_pair.first << "," << occup.body->id << ","
                         << occup.matchedSeat.matchConfidence << "," << occup.matchedSeat.cabinRegion.id << ","
                         << std::setprecision(0) << bbox[0].x << "," << bbox[0].y << "," << bbox[1].x << "," << bbox[1].y
                         << std::setprecision(4);
