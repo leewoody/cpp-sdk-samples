@@ -279,9 +279,6 @@ int main(int argsc, char** argsv) {
                 processOccupantVideo(*detector, csv_file_stream, program_options);
                 break;
             case program_options.FACE:
-                //update the detector accordingly
-                detector =
-                    std::make_shared<vision::SyncFrameDetector>(program_options.data_dir, program_options.num_faces);
                 processFaceVideo(*detector, csv_file_stream, program_options);
                 break;
             default:
