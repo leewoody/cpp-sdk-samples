@@ -150,6 +150,10 @@ void Visualizer::drawFaceMetrics(affdex::vision::Face face, std::vector<Point> b
     auto age_category = face.getAgeCategory();
     drawText("age_category", AGE_CATEGORIES.at(age_category), cv::Point(bounding_box[0].x, padding += spacing),
              true);
+
+    // draw mood
+    auto mood = face.getMood();
+    drawText("mood", MOODS[mood], cv::Point(bounding_box[0].x, padding += spacing), true);
 }
 
 void Visualizer::updateImage(const cv::Mat& output_img) {
@@ -282,7 +286,6 @@ void Visualizer::drawObjectMetrics(const affdex::vision::Object& object) {
 
     const std::string confidence(std::to_string(object.confidence));
     const std::string regions_confidence(std::to_string(object.matchedRegions[0].matchConfidence));
-
 
     drawText("Object Confidence",
              confidence,
