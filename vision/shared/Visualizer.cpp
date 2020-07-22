@@ -1,6 +1,7 @@
 #include "Visualizer.h"
 #include "AffectivaLogo.h"
 #include "PlottingObjectListener.h"
+#include "PlottingBodyListener.h"
 
 #include <opencv2/highgui/highgui.hpp>
 #include <iomanip>
@@ -79,6 +80,27 @@ Visualizer::Visualizer() :
         {AgeCategory::TEEN, "TEEN"},
         {AgeCategory::ADULT, "ADULT"}
     };
+
+    COLOR_EDGES_PAIR = {
+        {cv::Scalar(255, 0, 0), BodyPoint::NECK, BodyPoint::RIGHT_SHOULDER},
+        {cv::Scalar(255, 85, 0), BodyPoint::NECK, BodyPoint::LEFT_SHOULDER},
+        {cv::Scalar(255, 170, 0), BodyPoint::RIGHT_SHOULDER, BodyPoint::RIGHT_ELBOW},
+        {cv::Scalar(255, 255, 0), BodyPoint::RIGHT_ELBOW, BodyPoint::RIGHT_WRIST},
+        {cv::Scalar(170, 255, 0), BodyPoint::LEFT_SHOULDER, BodyPoint::LEFT_ELBOW},
+        {cv::Scalar(85, 255, 0), BodyPoint::LEFT_ELBOW, BodyPoint::LEFT_WRIST},
+        {cv::Scalar(0, 255, 0), BodyPoint::NECK, BodyPoint::RIGHT_HIP},
+        {cv::Scalar(0, 255, 85), BodyPoint::RIGHT_HIP, BodyPoint::RIGHT_KNEE},
+        {cv::Scalar(0, 255, 170), BodyPoint::RIGHT_KNEE, BodyPoint::RIGHT_ANKLE},
+        {cv::Scalar(0, 255, 255), BodyPoint::NECK, BodyPoint::LEFT_HIP},
+        {cv::Scalar(0, 170, 255), BodyPoint::LEFT_HIP, BodyPoint::LEFT_KNEE},
+        {cv::Scalar(0, 85, 255), BodyPoint::LEFT_KNEE, BodyPoint::LEFT_ANKLE},
+        {cv::Scalar(0, 0, 255), BodyPoint::NECK, BodyPoint::NOSE},
+        {cv::Scalar(85, 0, 255), BodyPoint::NOSE, BodyPoint::RIGHT_EYE},
+        {cv::Scalar(170, 0, 255), BodyPoint::RIGHT_EYE, BodyPoint::RIGHT_EAR},
+        {cv::Scalar(255, 0, 255), BodyPoint::NOSE, BodyPoint::LEFT_EYE},
+        {cv::Scalar(255, 0, 170), BodyPoint::LEFT_EYE, BodyPoint::LEFT_EAR}
+    };
+
 }
 
 void Visualizer::drawFaceMetrics(affdex::vision::Face face, std::vector<Point> bounding_box, bool draw_face_id) {
@@ -146,7 +168,7 @@ void Visualizer::drawFaceMetrics(affdex::vision::Face face, std::vector<Point> b
     drawClassifierOutput("age_confidence", age.confidence, cv::Point(bounding_box[0].x, padding += spacing), true);
 
     //Draw age category
-    auto age_category = face.getAgeCategory();
+    const auto age_category = face.getAgeCategory();
     drawText("age_category", AGE_CATEGORIES.at(age_category), cv::Point(bounding_box[0].x, padding += spacing),
              true);
 }
@@ -155,8 +177,8 @@ void Visualizer::updateImage(const cv::Mat& output_img) {
     img = output_img;
 
     if (!logo_resized) {
-        double logo_width = (logo.size().width > img.size().width * 0.25 ? img.size().width * 0.25 : logo.size().width);
-        double logo_height = ((double)logo_width) * ((double)logo.size().height / logo.size().width);
+        const double logo_width = (logo.size().width > img.size().width * 0.25 ? img.size().width * 0.25 : logo.size().width);
+        const double logo_height = ((double)logo_width) * ((double)logo.size().height / logo.size().width);
         cv::resize(logo, logo, cv::Size(logo_width, logo_height));
         logo_resized = true;
     }
@@ -175,8 +197,8 @@ void Visualizer::drawBoundingBox(const std::vector<Point>& bounding_box, float v
     if (!bounding_box.empty()) {
         //Draw bounding box
         const ColorgenRedGreen valence_color_generator(-100, 100);
-        cv::Point top_left(bounding_box[0].x, bounding_box[0].y);
-        cv::Point bottom_right(bounding_box[1].x, bounding_box[1].y);
+        const cv::Point top_left(bounding_box[0].x, bounding_box[0].y);
+        const cv::Point bottom_right(bounding_box[1].x, bounding_box[1].y);
         cv::rectangle(img, top_left, bottom_right,
                       valence_color_generator(valence), 3);
     }
@@ -185,10 +207,9 @@ void Visualizer::drawBoundingBox(const std::vector<Point>& bounding_box, float v
 void Visualizer::drawBoundingBox(const std::vector<Point>& bounding_box, const cv::Scalar& color) {
     if (!bounding_box.empty()) {
         //Draw bounding box
-        cv::Point top_left(bounding_box[0].x, bounding_box[0].y);
-        cv::Point bottom_right(bounding_box[1].x, bounding_box[1].y);
-        cv::rectangle(img, top_left, bottom_right,
-                      color, 3);
+        const cv::Point top_left(bounding_box[0].x, bounding_box[0].y);
+        const cv::Point bottom_right(bounding_box[1].x, bounding_box[1].y);
+        cv::rectangle(img, top_left, bottom_right, color, 3);
     }
 }
 
@@ -223,11 +244,29 @@ void Visualizer::drawText(const std::string& name, const std::string& value,
     cv::putText(img, label + value, display_loc, cv::FONT_HERSHEY_SIMPLEX, 0.5f, std::move(color), 1);
 }
 
+void Visualizer::drawBodyMetrics(std::map<BodyPoint, Point>& body_points) {
+    //draw lines between two decided body points
+    for (const auto& color_edges : COLOR_EDGES_PAIR) {
+        if (body_points.find(color_edges.start_) != body_points.end() &&
+            body_points.find(color_edges.end_) != body_points.end()) {
+            const Point pt1 = body_points[color_edges.start_];
+            const Point pt2 = body_points[color_edges.end_];
+
+            cv::line(img, cv::Point(pt1.x, pt1.y), cv::Point(pt2.x, pt2.y), color_edges.color_);
+        }
+
+    }
+}
+
 void Visualizer::drawOccupantMetrics(const affdex::vision::Occupant& occupant) {
 
     // Draw occupant bounding box
     auto bbox = {occupant.boundingBox.getTopLeft(), occupant.boundingBox.getBottomRight()};
     drawBoundingBox(bbox, {199, 110, 255});
+    if(occupant.body) {
+        drawBodyMetrics(occupant.body->body_points);
+
+    }
 
     //Do not draw if polygon's ID is Unknown
     if (occupant.matchedSeat.cabinRegion.id != REGION_UNKNOWN) {
@@ -281,7 +320,6 @@ void Visualizer::drawObjectMetrics(const affdex::vision::Object& object) {
 
     const std::string confidence(std::to_string(object.confidence));
     const std::string regions_confidence(std::to_string(object.matchedRegions[0].matchConfidence));
-
 
     drawText("Object Confidence",
              confidence,
