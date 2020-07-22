@@ -101,6 +101,16 @@ Visualizer::Visualizer() :
         {cv::Scalar(255, 0, 170), BodyPoint::LEFT_EYE, BodyPoint::LEFT_EAR}
     };
 
+    GAZE= {
+        { Gaze::UNKNOWN, "UNKNOWN"},
+        { Gaze::LEFT, "LEFT"},
+        { Gaze::RIGHT, "RIGHT"},
+        { Gaze::UP_RIGHT, "UP_RIGHT"},
+        { Gaze::FORWARD, "FORWARD"},
+        { Gaze::FORWARD_DOWN, "FORWARD_DOWN"},
+        { Gaze::DOWN, "DOWN"}
+    };
+
 }
 
 void Visualizer::drawFaceMetrics(affdex::vision::Face face, std::vector<Point> bounding_box, bool draw_face_id) {
@@ -171,6 +181,13 @@ void Visualizer::drawFaceMetrics(affdex::vision::Face face, std::vector<Point> b
     const auto age_category = face.getAgeCategory();
     drawText("age_category", AGE_CATEGORIES.at(age_category), cv::Point(bounding_box[0].x, padding += spacing),
              true);
+
+    //Draw gaze
+    auto gaze = face.getGazeMetric();
+    drawText("gaze", GAZE[gaze.gaze], cv::Point(bounding_box[0].x, padding += spacing), true);
+    drawClassifierOutput("gaze_confidence", gaze.confidence, cv::Point(bounding_box[0].x, padding += spacing), true);
+
+
 }
 
 void Visualizer::updateImage(const cv::Mat& output_img) {

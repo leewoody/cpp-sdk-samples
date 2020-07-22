@@ -237,7 +237,7 @@ void processFaceVideo(vision::SyncFrameDetector& detector,
                       ProgramOptions& program_options) {
     // configure the Detector by enabling features
     detector.enable({vision::Feature::EMOTIONS, vision::Feature::EXPRESSIONS, vision::Feature::IDENTITY,
-                     vision::Feature::APPEARANCES});
+                     vision::Feature::APPEARANCES, vision::Feature::GAZE});
 
     // prepare listeners
     PlottingImageListener image_listener(csv_file_stream, program_options.draw_display,
@@ -426,9 +426,6 @@ int main(int argsc, char** argsv) {
                 processBodyVideo(*detector, csv_file_stream, program_options);
                 break;
             case program_options.FACE:
-                //update the detector accordingly
-                detector =
-                    std::make_shared<vision::SyncFrameDetector>(program_options.data_dir, program_options.num_faces);
                 processFaceVideo(*detector, csv_file_stream, program_options);
                 break;
             default:

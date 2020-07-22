@@ -159,7 +159,7 @@ void processFaceStream(std::unique_ptr<vision::Detector>& frame_detector, std::o
 
     // configure the Detector by enabling features and assigning listeners
     frame_detector->enable({vision::Feature::EMOTIONS, vision::Feature::EXPRESSIONS, vision::Feature::IDENTITY,
-                            vision::Feature::APPEARANCES});
+                            vision::Feature::APPEARANCES, vision::Feature::GAZE});
     frame_detector->setImageListener(&image_listener);
     frame_detector->setFaceListener(&face_listener);
     frame_detector->setProcessStatusListener(&status_listener);
