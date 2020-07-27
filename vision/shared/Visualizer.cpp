@@ -102,13 +102,13 @@ Visualizer::Visualizer() :
     };
 
     GAZE= {
-        { Gaze::UNKNOWN, "UNKNOWN"},
-        { Gaze::LEFT, "LEFT"},
-        { Gaze::RIGHT, "RIGHT"},
-        { Gaze::UP_RIGHT, "UP_RIGHT"},
-        { Gaze::FORWARD, "FORWARD"},
-        { Gaze::FORWARD_DOWN, "FORWARD_DOWN"},
-        { Gaze::DOWN, "DOWN"}
+        { GazeDirection::UNKNOWN, "UNKNOWN"},
+        { GazeDirection::LEFT, "LEFT"},
+        { GazeDirection::RIGHT, "RIGHT"},
+        { GazeDirection::UP_RIGHT, "UP_RIGHT"},
+        { GazeDirection::FORWARD, "FORWARD"},
+        { GazeDirection::FORWARD_DOWN, "FORWARD_DOWN"},
+        { GazeDirection::DOWN, "DOWN"}
     };
 
 }
@@ -184,7 +184,7 @@ void Visualizer::drawFaceMetrics(affdex::vision::Face face, std::vector<Point> b
 
     //Draw gaze
     auto gaze = face.getGazeMetric();
-    drawText("gaze", GAZE[gaze.gaze], cv::Point(bounding_box[0].x, padding += spacing), true);
+    drawText("gaze_direction", GAZE[gaze.gazeDirection], cv::Point(bounding_box[0].x, padding += spacing), true);
     drawClassifierOutput("gaze_confidence", gaze.confidence, cv::Point(bounding_box[0].x, padding += spacing), true);
 
 
