@@ -1,12 +1,12 @@
 # A Docker file to be used for building the sample applications for the Linux SDK Ubuntu 16.04
 #
 # build:
-# $ docker build --build-arg AFFECTIVA_AUTO_SDK_URL=$AFFECTIVA_AUTO_SDK_URL --build-arg BRANCH=$BRANCH --tag=affectiva-auto:v2.0-ics .
+# $ docker build --build-arg AFFECTIVA_AUTO_SDK_URL=$AFFECTIVA_AUTO_SDK_URL --build-arg BRANCH=$BRANCH --tag=affectiva-ics:v2.2.1 .
 #
 # the result will be an image that has the tar'ed artifact of the sample app and all of its dependencies installed
 #
 # run this container interactively:
-# $ docker run -it --rm affectiva-auto:v2.0-ics
+# $ docker run -it --rm affectiva-ics:v2.2.1
 #
 # running the webcam or mic demos interactively requires some privileges, devices, and access to the X11 socket:
 # $ docker run -it --privileged --rm --net=host \
@@ -15,7 +15,7 @@
 #        -e DISPLAY=$DISPLAY     \
 #        --device=/dev/video0 \
 #        --device=/dev/snd \
-#        affectiva-auto:v2.0-ics
+#        affectiva-ics:v2.2.1
 #
 # Then from the shell, run the following for the webcam demo:
 # $ /opt/testapp-artifact/build/vision/bin/frame-detector-webcam-demo -d $AUTO_SDK_DIR/data
