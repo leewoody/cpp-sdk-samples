@@ -67,7 +67,7 @@ public:
     std::map<affdex::vision::Mood, std::string> MOODS;
     std::map<affdex::vision::AgeCategory, std::string> AGE_CATEGORIES;
     std::vector<ColorEdges> COLOR_EDGES_PAIR; //contains body points with its respective color
-    std::map<affdex::vision::GazeDirection, std::string> GAZE;
+    std::map<affdex::vision::GazeRegion, std::string> GAZE_REGIONS;
 
 private:
 

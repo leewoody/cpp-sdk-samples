@@ -101,14 +101,14 @@ Visualizer::Visualizer() :
         {cv::Scalar(255, 0, 170), BodyPoint::LEFT_EYE, BodyPoint::LEFT_EAR}
     };
 
-    GAZE= {
-        { GazeDirection::UNKNOWN, "UNKNOWN"},
-        { GazeDirection::LEFT, "LEFT"},
-        { GazeDirection::RIGHT, "RIGHT"},
-        { GazeDirection::UP_RIGHT, "UP_RIGHT"},
-        { GazeDirection::FORWARD, "FORWARD"},
-        { GazeDirection::FORWARD_DOWN, "FORWARD_DOWN"},
-        { GazeDirection::DOWN, "DOWN"}
+    GAZE_REGIONS= {
+        { GazeRegion::UNKNOWN, "UNKNOWN"},
+        { GazeRegion::LEFT, "LEFT"},
+        { GazeRegion::RIGHT, "RIGHT"},
+        { GazeRegion::UP_RIGHT, "UP_RIGHT"},
+        { GazeRegion::FORWARD, "FORWARD"},
+        { GazeRegion::FORWARD_DOWN, "FORWARD_DOWN"},
+        { GazeRegion::DOWN, "DOWN"}
     };
 
 }
@@ -116,6 +116,9 @@ Visualizer::Visualizer() :
 void Visualizer::drawFaceMetrics(affdex::vision::Face face, std::vector<Point> bounding_box, bool draw_face_id) {
     //Draw Right side metrics
     int padding = bounding_box[0].y; //Top left Y
+
+    //gaze region will be used later
+    bool gaze_override = false;
 
     auto expressions = face.getExpressions();
     for (auto& exp : EXPRESSIONS) {
@@ -136,6 +139,10 @@ void Visualizer::drawFaceMetrics(affdex::vision::Face face, std::vector<Point> b
                 val *= 100;
             } // blink is 0 or 1, so translate to 0 or 100 so it shows up in the UI
             drawClassifierOutput(exp.second, val, cv::Point(bounding_box[1].x, padding += spacing), false);
+            //If eye closure is MORE than 50 then change gaze to UNKNOWN
+            if (exp.first == Expression::EYE_CLOSURE && val > 50) {
+                gaze_override =  true;
+            }
         }
     }
 
@@ -184,8 +191,12 @@ void Visualizer::drawFaceMetrics(affdex::vision::Face face, std::vector<Point> b
 
     //Draw gaze
     auto gaze = face.getGazeMetric();
-    drawText("gaze_direction", GAZE[gaze.gazeDirection], cv::Point(bounding_box[0].x, padding += spacing), true);
-    drawClassifierOutput("gaze_confidence", gaze.confidence, cv::Point(bounding_box[0].x, padding += spacing), true);
+    //Eye closure filter
+    auto gaze_region = gaze_override ? GAZE_REGIONS[GazeRegion::UNKNOWN] : GAZE_REGIONS[gaze.gazeRegion];
+    auto gaze_confidence = gaze_override ? 0 : gaze.confidence;
+
+    drawText("gaze_region", gaze_region, cv::Point(bounding_box[0].x, padding += spacing), true);
+    drawClassifierOutput("gaze_confidence", gaze_confidence, cv::Point(bounding_box[0].x, padding += spacing), true);
 
 
 }
