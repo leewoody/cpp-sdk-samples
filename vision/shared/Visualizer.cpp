@@ -122,72 +122,72 @@ void Visualizer::drawFaceMetrics(affdex::vision::Face face, std::vector<Point> b
 
     auto expressions = face.getExpressions();
     for (auto& exp : EXPRESSIONS) {
-        // special case: display blink rate as number instead of bar
-        if (exp.first == Expression::BLINK_RATE) {
-            std::stringstream ss;
-            ss << std::fixed << std::setw(3) << std::setprecision(1);
-            ss << expressions.at(exp.first);
-            drawText(exp.second,
-                     ss.str(),
-                     cv::Point(bounding_box[1].x, padding += spacing),
-                     false,
-                     cv::Scalar(255, 255, 255));
-        }
-        else {
-            float val = expressions.at(exp.first);
-            if (exp.first == Expression::BLINK) {
-                val *= 100;
-            } // blink is 0 or 1, so translate to 0 or 100 so it shows up in the UI
-            drawClassifierOutput(exp.second, val, cv::Point(bounding_box[1].x, padding += spacing), false);
+//        // special case: display blink rate as number instead of bar
+//        if (exp.first == Expression::BLINK_RATE) {
+//            std::stringstream ss;
+//            ss << std::fixed << std::setw(3) << std::setprecision(1);
+//            ss << expressions.at(exp.first);
+//            drawText(exp.second,
+//                     ss.str(),
+//                     cv::Point(bounding_box[1].x, padding += spacing),
+//                     false,
+//                     cv::Scalar(255, 255, 255));
+//        }
+//        else {
+//            float val = expressions.at(exp.first);
+//            if (exp.first == Expression::BLINK) {
+//                val *= 100;
+//            } // blink is 0 or 1, so translate to 0 or 100 so it shows up in the UI
+//            drawClassifierOutput(exp.second, val, cv::Point(bounding_box[1].x, padding += spacing), false);
             //If eye closure is MORE than 50 then change gaze to UNKNOWN
-            if (exp.first == Expression::EYE_CLOSURE && val > 50) {
+        if (exp.first == Expression::EYE_CLOSURE && expressions.at(exp.first) >50) {
                 gaze_override =  true;
-            }
         }
+//        }
     }
-
-    //Draw Head Angles
-    drawHeadOrientation(face.getMeasurements(), bounding_box[1].x, padding, false);
-
-    padding = bounding_box[0].y;  //Top right Y
-    if (draw_face_id) {
-        drawText("ID",
-                 std::to_string(face.getId()),
-                 cv::Point(bounding_box[0].x, padding + spacing),
-                 false,
-                 cv::Scalar(255, 255, 255));
-    }
-
-    //Draw Left side metrics
-    auto emotions = face.getEmotions();
-    for (auto& emo : EMOTIONS) {
-        drawClassifierOutput(emo.second,
-                             emotions.at(emo.first),
-                             cv::Point(bounding_box[0].x, padding += spacing),
-                             true);
-    }
-
-    //Draw identity
-    auto identity = face.getIdentityMetric();
-    std::string id_content;
-    identity.id == -1 ? id_content = "UNKNOWN" : id_content = std::to_string(identity.id);
-    drawText("identity", id_content, cv::Point(bounding_box[0].x, padding += spacing), true);
-    drawClassifierOutput("identity_confidence",
-                         identity.confidence,
-                         cv::Point(bounding_box[0].x, padding += spacing),
-                         true);
-
-    //Draw age
-    auto age = face.getAgeMetric();
-    std::string age_content;
-    age.years == -1 ? age_content = "UNKNOWN" : age_content = std::to_string(age.years);
-    drawText("age", age_content, cv::Point(bounding_box[0].x, padding += spacing), true);
-    drawClassifierOutput("age_confidence", age.confidence, cv::Point(bounding_box[0].x, padding += spacing), true);
-
-    //Draw age category
-    const auto age_category = face.getAgeCategory();
-    drawText("age_category", AGE_CATEGORIES.at(age_category), cv::Point(bounding_box[0].x, padding += spacing),
-             true);
+//
+//    //Draw Head Angles
+//    drawHeadOrientation(face.getMeasurements(), bounding_box[1].x, padding, false);
+//
+//    padding = bounding_box[0].y;  //Top right Y
+//    if (draw_face_id) {
+//        drawText("ID",
+//                 std::to_string(face.getId()),
+//                 cv::Point(bounding_box[0].x, padding + spacing),
+//                 false,
+//                 cv::Scalar(255, 255, 255));
+//    }
+//
+//    //Draw Left side metrics
+//    auto emotions = face.getEmotions();
+//    for (auto& emo : EMOTIONS) {
+//        drawClassifierOutput(emo.second,
+//                             emotions.at(emo.first),
+//                             cv::Point(bounding_box[0].x, padding += spacing),
+//                             true);
+//    }
+//
+//    //Draw identity
+//    auto identity = face.getIdentityMetric();
+//    std::string id_content;
+//    identity.id == -1 ? id_content = "UNKNOWN" : id_content = std::to_string(identity.id);
+//    drawText("identity", id_content, cv::Point(bounding_box[0].x, padding += spacing), true);
+//    drawClassifierOutput("identity_confidence",
+//                         identity.confidence,
+//                         cv::Point(bounding_box[0].x, padding += spacing),
+//                         true);
+//
+//    //Draw age
+//    auto age = face.getAgeMetric();
+//    std::string age_content;
+//    age.years == -1 ? age_content = "UNKNOWN" : age_content = std::to_string(age.years);
+//    drawText("age", age_content, cv::Point(bounding_box[0].x, padding += spacing), true);
+//    drawClassifierOutput("age_confidence", age.confidence, cv::Point(bounding_box[0].x, padding += spacing), true);
+//
+//    //Draw age category
+//    const auto age_category = face.getAgeCategory();
+//    drawText("age_category", AGE_CATEGORIES.at(age_category), cv::Point(bounding_box[0].x, padding += spacing),
+//             true);
 
     //Draw gaze
     auto gaze = face.getGazeMetric();
@@ -195,8 +195,8 @@ void Visualizer::drawFaceMetrics(affdex::vision::Face face, std::vector<Point> b
     auto gaze_region = gaze_override ? GAZE_REGIONS[GazeRegion::UNKNOWN] : GAZE_REGIONS[gaze.gazeRegion];
     auto gaze_confidence = gaze_override ? 0 : gaze.confidence;
 
-    drawText("gaze_region", gaze_region, cv::Point(bounding_box[0].x, padding += spacing), true);
-    drawClassifierOutput("gaze_confidence", gaze_confidence, cv::Point(bounding_box[0].x, padding += spacing), true);
+    drawText("gaze_region", gaze_region, cv::Point(bounding_box[1].x, padding += spacing), false);
+    drawClassifierOutput("gaze_confidence", gaze_confidence, cv::Point(bounding_box[1].x, padding += spacing), false);
 
 
 }
