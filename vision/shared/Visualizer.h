@@ -67,6 +67,7 @@ public:
     std::map<affdex::vision::Mood, std::string> MOODS;
     std::map<affdex::vision::AgeCategory, std::string> AGE_CATEGORIES;
     std::vector<ColorEdges> COLOR_EDGES_PAIR; //contains body points with its respective color
+    std::map<affdex::vision::GazeRegion, std::string> GAZE_REGIONS; //Region of gaze, from the person’s perspective -- e.g. LEFT means the person is looking to THEIR left”
 
 private:
 

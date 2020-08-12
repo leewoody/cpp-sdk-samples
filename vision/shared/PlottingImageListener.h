@@ -22,7 +22,7 @@ public:
         for (const auto& expression : viz_.EXPRESSIONS) {
             out_stream_ << expression.second << ",";
         }
-        out_stream_ << "mood,dominantEmotion,dominantEmotionConfidence,";
+        out_stream_ << "mood,dominantEmotion,dominantEmotionConfidence,gazeRegion, gazeConfidence";
         out_stream_ << "identity,identityConfidence,age,ageConfidence,ageCategory";
         out_stream_ << std::endl;
         out_stream_.precision(2);
@@ -72,8 +72,8 @@ public:
             for (const auto& expression : viz_.EXPRESSIONS) {
                 out_stream_ << "nan,";
             }
-            out_stream_
-                << "nan,nan,nan,nan,nan,nan,nan,nan"; // mood, dominant emotion, dominant emotion confidence, identity, identity_confidence, age, age_confidence, age_category
+            // mood, dominant emotion, dominant emotion confidence, gazeRegion, gazeConfidence, identity, identityConfidence, age, ageConfidence, ageCategory
+            out_stream_<< "nan,nan,nan,nan,nan,nan,nan,nan,nan,nan";
             out_stream_ << std::endl;
         }
 
@@ -109,6 +109,11 @@ public:
             vision::DominantEmotionMetric dominant_emotion_metric = f.getDominantEmotion();
             out_stream_ << viz_.DOMINANT_EMOTIONS[dominant_emotion_metric.dominantEmotion] << ","
                         << dominant_emotion_metric.confidence << ",";
+
+            vision::GazeMetric gaze_metric = f.getGazeMetric();
+            auto gaze_confidence = gaze_metric.gazeRegion==vision::GazeRegion::UNKNOWN ? -1 : gaze_metric.confidence;
+
+            out_stream_ << viz_.GAZE_REGIONS[gaze_metric.gazeRegion] << "," << gaze_confidence << ",";
 
             auto identity_metric = f.getIdentityMetric();
             std::string id_content;
