@@ -23,7 +23,7 @@ public:
             out_stream_ << expression.second << ",";
         }
         out_stream_ << "mood,dominantEmotion,dominantEmotionConfidence,gazeRegion, gazeConfidence";
-        out_stream_ << "identity,identityConfidence,age,ageConfidence,ageCategory";
+            out_stream_ << "identity,identityConfidence,age,ageConfidence,ageCategory";
         out_stream_ << std::endl;
         out_stream_.precision(2);
         out_stream_ << std::fixed;
@@ -111,7 +111,7 @@ public:
                         << dominant_emotion_metric.confidence << ",";
 
             vision::GazeMetric gaze_metric = f.getGazeMetric();
-            auto gaze_confidence = gaze_metric.gazeRegion==vision::GazeRegion::UNKNOWN ? -1 : gaze_metric.confidence;
+            auto gaze_confidence = gaze_metric.gazeRegion==vision::GazeRegion::UNKNOWN ? 'nan' : gaze_metric.confidence;
 
             out_stream_ << viz_.GAZE_REGIONS[gaze_metric.gazeRegion] << "," << gaze_confidence << ",";
 

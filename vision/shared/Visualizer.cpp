@@ -185,7 +185,7 @@ void Visualizer::drawFaceMetrics(affdex::vision::Face face, std::vector<Point> b
     //Draw gaze
     auto gaze = face.getGazeMetric();
 
-    auto gaze_confidence = gaze.gazeRegion==GazeRegion::UNKNOWN ? -1 : gaze.confidence;
+    auto gaze_confidence = gaze.gazeRegion==GazeRegion::UNKNOWN ? 0 : gaze.confidence;
 
     drawText("gaze_region", GAZE_REGIONS[gaze.gazeRegion], cv::Point(bounding_box[0].x, padding += spacing), true);
     drawClassifierOutput("gaze_confidence", gaze_confidence, cv::Point(bounding_box[0].x, padding += spacing), true);
