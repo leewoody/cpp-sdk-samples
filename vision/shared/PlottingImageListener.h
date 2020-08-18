@@ -111,9 +111,13 @@ public:
                         << dominant_emotion_metric.confidence << ",";
 
             vision::GazeMetric gaze_metric = f.getGazeMetric();
-            auto gaze_confidence = gaze_metric.gazeRegion==vision::GazeRegion::UNKNOWN ? 'nan' : gaze_metric.confidence;
 
-            out_stream_ << viz_.GAZE_REGIONS[gaze_metric.gazeRegion] << "," << gaze_confidence << ",";
+            if(gaze_metric.gazeRegion==vision::GazeRegion::UNKNOWN){
+                out_stream_ << viz_.GAZE_REGIONS[gaze_metric.gazeRegion] << "," << "nan" << ",";
+            }
+            else {
+                out_stream_ << viz_.GAZE_REGIONS[gaze_metric.gazeRegion] << "," << gaze_metric.confidence << ",";
+            }
 
             auto identity_metric = f.getIdentityMetric();
             std::string id_content;
