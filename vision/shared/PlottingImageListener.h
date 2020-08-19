@@ -23,7 +23,8 @@ public:
             out_stream_ << expression.second << ",";
         }
         out_stream_ << "mood,dominantEmotion,dominantEmotionConfidence,gazeRegion, gazeConfidence";
-            out_stream_ << "identity,identityConfidence,age,ageConfidence,ageCategory";
+        out_stream_ << "identity,identityConfidence,age,ageConfidence,ageCategory,glasses";
+
         out_stream_ << std::endl;
         out_stream_.precision(2);
         out_stream_ << std::fixed;
@@ -72,8 +73,8 @@ public:
             for (const auto& expression : viz_.EXPRESSIONS) {
                 out_stream_ << "nan,";
             }
-            // mood, dominant emotion, dominant emotion confidence, gazeRegion, gazeConfidence, identity, identityConfidence, age, ageConfidence, ageCategory
-            out_stream_<< "nan,nan,nan,nan,nan,nan,nan,nan,nan,nan";
+            // mood,dominantEmotion,dominantEmotionConfidence,gazeRegion, gazeConfidence,identity,identityConfidence,age,ageConfidence,ageCategory,glasses
+            out_stream_<< "nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan";
             out_stream_ << std::endl;
         }
 
@@ -131,6 +132,8 @@ public:
 
             auto age_category = f.getAgeCategory();
             out_stream_ << viz_.AGE_CATEGORIES.at(age_category);
+
+            out_stream_ << "," << f.getGlasses();
 
             out_stream_ << std::endl;
         }
