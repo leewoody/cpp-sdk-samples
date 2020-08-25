@@ -262,7 +262,7 @@ void processFaceVideo(vision::SyncFrameDetector& detector,
             vision::Frame
                 f(mat.size().width, mat.size().height, mat.data, vision::Frame::ColorFormat::BGR, timestamp_ms);
             detector.process(f);
-            image_listener.processResults();
+            image_listener.processResults(f);
             //To save output video file
             if (program_options.write_video) {
                 program_options.output_video << image_listener.getImageData();
