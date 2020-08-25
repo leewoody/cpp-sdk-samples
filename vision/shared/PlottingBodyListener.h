@@ -7,7 +7,6 @@ using namespace affdex;
 
 static std::map<BodyPoint, str> BODY_POINT_TO_STRING = {
     {BodyPoint::NOSE, "nose"},
-    {BodyPoint::NECK, "neck",},
     {BodyPoint::RIGHT_SHOULDER, "right_shoulder"},
     {BodyPoint::RIGHT_ELBOW, "right_elbow"},
     {BodyPoint::RIGHT_WRIST, "right_wrist"},
@@ -19,12 +18,12 @@ static std::map<BodyPoint, str> BODY_POINT_TO_STRING = {
     {BodyPoint::RIGHT_EYE, "right_eye"},
     {BodyPoint::LEFT_EYE, "left_eye"},
     {BodyPoint::RIGHT_EAR, "right_ear"},
-    {BodyPoint::LEFT_EAR, "left_ear"}
+    {BodyPoint::LEFT_EAR, "left_ear"},
+    {BodyPoint::NECK, "neck"}
 };
 
 static const std::vector<BodyPoint> BODY_POINTS = {
     BodyPoint::NOSE,
-    BodyPoint::NECK,
     BodyPoint::RIGHT_SHOULDER,
     BodyPoint::RIGHT_ELBOW,
     BodyPoint::RIGHT_WRIST,
@@ -36,7 +35,8 @@ static const std::vector<BodyPoint> BODY_POINTS = {
     BodyPoint::RIGHT_EYE,
     BodyPoint::LEFT_EYE,
     BodyPoint::RIGHT_EAR,
-    BodyPoint::LEFT_EAR
+    BodyPoint::LEFT_EAR,
+    BodyPoint::NECK
 };
 
 static const int HEADER_SIZE = 38;
