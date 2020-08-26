@@ -232,7 +232,8 @@ void Visualizer::drawBoundingBox(const std::vector<Point>& bounding_box, const c
 void Visualizer::drawPolygon(const std::vector<Point>& points, const cv::Scalar& color) {
     if (!points.empty()) {
         //Draw polygon
-        std::vector<cv::Point> pts(points.size());
+        std::vector<cv::Point> pts;
+        pts.reserve(points.size());
         for (const auto& p: points) {
             pts.emplace_back(cv::Point(p.x, p.y));
         }
