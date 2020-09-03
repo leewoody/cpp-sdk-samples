@@ -97,16 +97,15 @@ Visualizer::Visualizer() :
         {cv::Scalar(255, 0, 170), BodyPoint::LEFT_EYE, BodyPoint::LEFT_EAR}
     };
 
-    GAZE_REGIONS= {
-        { GazeRegion::UNKNOWN, "UNKNOWN"},
-        { GazeRegion::LEFT, "LEFT"},
-        { GazeRegion::RIGHT, "RIGHT"},
-        { GazeRegion::UP_RIGHT, "UP_RIGHT"},
-        { GazeRegion::FORWARD, "FORWARD"},
-        { GazeRegion::FORWARD_DOWN, "FORWARD_DOWN"},
-        { GazeRegion::DOWN, "DOWN"}
+    GAZE_REGIONS = {
+        {GazeRegion::UNKNOWN, "UNKNOWN"},
+        {GazeRegion::LEFT, "LEFT"},
+        {GazeRegion::RIGHT, "RIGHT"},
+        {GazeRegion::UP_RIGHT, "UP_RIGHT"},
+        {GazeRegion::FORWARD, "FORWARD"},
+        {GazeRegion::FORWARD_DOWN, "FORWARD_DOWN"},
+        {GazeRegion::DOWN, "DOWN"}
     };
-
 }
 
 void Visualizer::drawFaceMetrics(affdex::vision::Face face, std::vector<Point> bounding_box, bool draw_face_id) {
@@ -186,7 +185,6 @@ void Visualizer::drawFaceMetrics(affdex::vision::Face face, std::vector<Point> b
 
     //Draw glasses confidence
     drawClassifierOutput("glasses", face.getGlasses(), cv::Point(bounding_box[0].x, padding += spacing), true);
-
 }
 
 void Visualizer::updateImage(const cv::Mat& output_img) {
@@ -269,9 +267,8 @@ void Visualizer::drawBodyMetrics(std::map<BodyPoint, Point>& body_points) {
             const Point pt1 = body_points[color_edges.start_];
             const Point pt2 = body_points[color_edges.end_];
 
-            cv::line(img, cv::Point(pt1.x, pt1.y), cv::Point(pt2.x, pt2.y), color_edges.color_);
+            cv::line(img, cv::Point(pt1.x, pt1.y), cv::Point(pt2.x, pt2.y), color_edges.color_, 3);
         }
-
     }
 }
 
@@ -325,8 +322,10 @@ void Visualizer::drawObjectMetrics(const affdex::vision::Object& object) {
     //Configured area region;
     drawBoundingBox(bbox, color);
 
-    for (const auto& o : object.matchedRegions) {
-        drawPolygon(o.cabinRegion.vertices, {255, 255, 255});
+    const auto matched_region = object.matchedRegions[0];
+    //Do not draw if polygon's ID is Unknown
+    if (matched_region.cabinRegion.id != REGION_UNKNOWN) {
+        drawPolygon(matched_region.cabinRegion.vertices, {255, 255, 255});
     }
 
     int padding = object.boundingBox.getTopLeft().y; //Top left Y
@@ -336,12 +335,12 @@ void Visualizer::drawObjectMetrics(const affdex::vision::Object& object) {
                                                                                       spacing),
              false);
 
-    const std::string id(std::to_string(object.matchedRegions[0].cabinRegion.id));
+    const std::string id(std::to_string(matched_region.cabinRegion.id));
     const std::string
-        region_type(affdex::vision::CabinRegion::typeToString(object.matchedRegions[0].cabinRegion.type));
+        region_type(affdex::vision::CabinRegion::typeToString(matched_region.cabinRegion.type));
 
     const std::string confidence(std::to_string(object.confidence));
-    const std::string regions_confidence(std::to_string(object.matchedRegions[0].matchConfidence));
+    const std::string regions_confidence(std::to_string(matched_region.matchConfidence));
 
     drawText("Object Confidence",
              confidence,
