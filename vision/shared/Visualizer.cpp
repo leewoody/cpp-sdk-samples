@@ -34,7 +34,8 @@ Visualizer::Visualizer() :
         {Expression::BLINK_RATE, "blinkRate"},
         {Expression::EYE_WIDEN, "eyeWiden"},
         {Expression::INNER_BROW_RAISE, "innerBrowRaise"},
-        {Expression::LIP_CORNER_DEPRESSOR, "lipCornerDepressor"}
+        {Expression::LIP_CORNER_DEPRESSOR, "lipCornerDepressor"},
+        {Expression::LID_TIGHTEN, "lidTighten"}
     };
 
     EMOTIONS = {
