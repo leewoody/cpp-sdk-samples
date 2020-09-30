@@ -41,13 +41,13 @@ Visualizer::Visualizer() :
     EMOTIONS = {
         {Emotion::JOY, "joy"},
         {Emotion::ANGER, "anger"},
-        {Emotion::SURPRISE, "surprise"},
-        {Emotion::VALENCE, "valence"},
-        {Emotion::FEAR, "fear"},
-        {Emotion::SADNESS, "sadness"},
-        {Emotion::DISGUST, "disgust"},
-        {Emotion::NEUTRAL, "neutral"},
-        {Emotion::CONTEMPT, "contempt"}
+        // {Emotion::SURPRISE, "surprise"},
+        // {Emotion::VALENCE, "valence"},
+        // {Emotion::FEAR, "fear"},
+        // {Emotion::SADNESS, "sadness"},
+        // {Emotion::DISGUST, "disgust"},
+        {Emotion::NEUTRAL, "neutral"}
+        // {Emotion::CONTEMPT, "contempt"}
     };
 
     HEAD_ANGLES = {
@@ -135,9 +135,6 @@ void Visualizer::drawFaceMetrics(affdex::vision::Face face, std::vector<Point> b
         }
     }
 
-    //Draw Head Angles
-    drawHeadOrientation(face.getMeasurements(), bounding_box[1].x, padding, false);
-
     padding = bounding_box[0].y;  //Top right Y
     if (draw_face_id) {
         drawText("ID",
@@ -156,36 +153,39 @@ void Visualizer::drawFaceMetrics(affdex::vision::Face face, std::vector<Point> b
                              true);
     }
 
+    //Draw Head Angles
+    drawHeadOrientation(face.getMeasurements(), bounding_box[0].x, padding, true);
+
     //Draw identity
-    auto identity = face.getIdentityMetric();
-    std::string id_content;
-    identity.id == -1 ? id_content = "UNKNOWN" : id_content = std::to_string(identity.id);
-    drawText("identity", id_content, cv::Point(bounding_box[0].x, padding += spacing), true);
-    drawClassifierOutput("identity_confidence",
-                         identity.confidence,
-                         cv::Point(bounding_box[0].x, padding += spacing),
-                         true);
+    // auto identity = face.getIdentityMetric();
+    // std::string id_content;
+    // identity.id == -1 ? id_content = "UNKNOWN" : id_content = std::to_string(identity.id);
+    // drawText("identity", id_content, cv::Point(bounding_box[0].x, padding += spacing), true);
+    // drawClassifierOutput("identity_confidence",
+    //                      identity.confidence,
+    //                      cv::Point(bounding_box[0].x, padding += spacing),
+    //                      true);
 
     //Draw age
-    auto age = face.getAgeMetric();
-    std::string age_content;
-    age.years == -1 ? age_content = "UNKNOWN" : age_content = std::to_string(age.years);
-    drawText("age", age_content, cv::Point(bounding_box[0].x, padding += spacing), true);
-    drawClassifierOutput("age_confidence", age.confidence, cv::Point(bounding_box[0].x, padding += spacing), true);
+    // auto age = face.getAgeMetric();
+    // std::string age_content;
+    // age.years == -1 ? age_content = "UNKNOWN" : age_content = std::to_string(age.years);
+    // drawText("age", age_content, cv::Point(bounding_box[0].x, padding += spacing), true);
+    // drawClassifierOutput("age_confidence", age.confidence, cv::Point(bounding_box[0].x, padding += spacing), true);
 
     //Draw age category
-    const auto age_category = face.getAgeCategory();
-    drawText("age_category", AGE_CATEGORIES.at(age_category), cv::Point(bounding_box[0].x, padding += spacing),
-             true);
+    // const auto age_category = face.getAgeCategory();
+    // drawText("age_category", AGE_CATEGORIES.at(age_category), cv::Point(bounding_box[0].x, padding += spacing),
+    //          true);
 
     //Draw gaze
-    auto gaze = face.getGazeMetric();
+    // auto gaze = face.getGazeMetric();
 
-    drawText("gaze_region", GAZE_REGIONS[gaze.gazeRegion], cv::Point(bounding_box[0].x, padding += spacing), true);
-    drawClassifierOutput("gaze_confidence", gaze.confidence, cv::Point(bounding_box[0].x, padding += spacing), true);
+    // drawText("gaze_region", GAZE_REGIONS[gaze.gazeRegion], cv::Point(bounding_box[0].x, padding += spacing), true);
+    // drawClassifierOutput("gaze_confidence", gaze.confidence, cv::Point(bounding_box[0].x, padding += spacing), true);
 
-    //Draw glasses confidence
-    drawClassifierOutput("glasses", face.getGlasses(), cv::Point(bounding_box[0].x, padding += spacing), true);
+    // //Draw glasses confidence
+    // drawClassifierOutput("glasses", face.getGlasses(), cv::Point(bounding_box[0].x, padding += spacing), true);
 }
 
 void Visualizer::updateImage(const cv::Mat& output_img) {
