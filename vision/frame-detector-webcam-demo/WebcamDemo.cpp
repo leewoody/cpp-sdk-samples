@@ -25,33 +25,8 @@ namespace po = boost::program_options; // abbreviate namespace
 static const std::string DISPLAY_DATA_DIR_ENV_VAR = "AFFECTIVA_VISION_DATA_DIR";
 static const affdex::Str DATA_DIR_ENV_VAR = STR(DISPLAY_DATA_DIR_ENV_VAR);
 
-struct ProgramOptions {
 
-    enum DetectionType {
-        FACE,
-        OBJECT,
-        OCCUPANT,
-        BODY
-    };
-    // cmd line args
-    affdex::Path data_dir;
-    affdex::Path output_file_path;
-    affdex::Path output_video_path;
-    std::vector<int> resolution;
-    int process_framerate;
-    int camera_framerate;
-    int camera_id;
-    unsigned int num_faces;
-    bool draw_display = true;
-    bool sync = false;
-    bool draw_id = true;
-    bool disable_logging = false;
-    bool write_video = false;
-    cv::VideoWriter output_video;
-    DetectionType detection_type = FACE;
-};
-
-void assembleProgramOptions(po::options_description& description, ProgramOptions& program_options) {
+void assembleProgramOptions(po::options_description& description, ProgramOptionsWebcam& program_options) {
     const std::vector<int> DEFAULT_RESOLUTION{1280, 720};
 
     description.add_options()
@@ -92,10 +67,11 @@ void assembleProgramOptions(po::options_description& description, ProgramOptions
         ("file,f", po::value<affdex::Path>(&program_options.output_file_path), "Name of the output CSV file.")
         ("object", "Enable object detection")
         ("occupant", "Enable occupant detection, also enables body and face detection")
-        ("body", "Enable body detection");
+        ("body", "Enable body detection")
+        ("drowsiness", "Enable drowsiness detection, will be used only if no other detection types are enabled");
 
 }
-bool verifyTypeOfProcess(const po::variables_map& args, ProgramOptions& program_options) {
+bool verifyTypeOfProcess(const po::variables_map& args, ProgramOptionsWebcam& program_options) {
 
     //Check for object or occupant or body argument present or not. If nothing is present then enable face by default.
     const bool is_occupant = args.count("occupant");
@@ -119,12 +95,14 @@ bool verifyTypeOfProcess(const po::variables_map& args, ProgramOptions& program_
         program_options.detection_type = program_options.BODY;
     }
     else {
+        //check for drowsiness only when faces are enabled
+        program_options.show_drowsiness = args.count("drowsiness");
         std::cout << "Setting up face detection\n";
     }
     return true;
 }
 
-bool processFrameFromWebcam(std::unique_ptr<vision::Detector>& frame_detector, ProgramOptions& program_options,
+bool processFrameFromWebcam(std::unique_ptr<vision::Detector>& frame_detector, ProgramOptionsWebcam& program_options,
                             cv::VideoCapture& webcam, const std::chrono::system_clock::time_point& start_time,
                             vision::Frame& frame) {
 
@@ -154,16 +132,18 @@ bool processFrameFromWebcam(std::unique_ptr<vision::Detector>& frame_detector, P
 }
 
 void processFaceStream(std::unique_ptr<vision::Detector>& frame_detector, std::ofstream& csv_file_stream,
-                       ProgramOptions& program_options, StatusListener& status_listener, cv::VideoCapture& webcam) {
+                       ProgramOptionsWebcam& program_options, StatusListener& status_listener, cv::VideoCapture& webcam) {
 
     // prepare listeners
-    PlottingImageListener image_listener(csv_file_stream, program_options.draw_display, !program_options
-        .disable_logging, program_options.draw_id);
+    PlottingImageListener image_listener(csv_file_stream, program_options);
     AFaceListener face_listener;
 
     // configure the Detector by enabling features and assigning listeners
     frame_detector->enable({vision::Feature::EMOTIONS, vision::Feature::EXPRESSIONS, vision::Feature::IDENTITY,
                             vision::Feature::APPEARANCES, vision::Feature::GAZE});
+    if(program_options.show_drowsiness) {
+        frame_detector->enable(vision::Feature::DROWSINESS);
+    }
     frame_detector->setImageListener(&image_listener);
     frame_detector->setFaceListener(&face_listener);
     frame_detector->setProcessStatusListener(&status_listener);
@@ -198,7 +178,7 @@ void processFaceStream(std::unique_ptr<vision::Detector>& frame_detector, std::o
 }
 
 void processObjectStream(std::unique_ptr<vision::Detector>& frame_detector, std::ofstream& csv_file_stream,
-                         ProgramOptions& program_options, StatusListener& status_listener, cv::VideoCapture& webcam) {
+                         ProgramOptionsWebcam& program_options, StatusListener& status_listener, cv::VideoCapture& webcam) {
 
     // prepare listeners
     PlottingObjectListener object_listener(csv_file_stream,
@@ -245,7 +225,7 @@ void processObjectStream(std::unique_ptr<vision::Detector>& frame_detector, std:
 
 void processOccupantStream(std::unique_ptr<vision::Detector>& frame_detector,
                            std::ofstream& csv_file_stream,
-                           ProgramOptions& program_options,
+                           ProgramOptionsWebcam& program_options,
                            StatusListener& status_listener,
                            cv::VideoCapture& webcam) {
 
@@ -293,7 +273,7 @@ void processOccupantStream(std::unique_ptr<vision::Detector>& frame_detector,
 
 void processBodyStream(std::unique_ptr<vision::Detector>& frame_detector,
                            std::ofstream& csv_file_stream,
-                           ProgramOptions& program_options,
+                           ProgramOptionsWebcam& program_options,
                            StatusListener& status_listener,
                            cv::VideoCapture& webcam) {
 
@@ -349,7 +329,7 @@ int main(int argsc, char** argsv) {
         std::cout << std::fixed << std::setprecision(precision);
 
         //Gathering program options
-        ProgramOptions program_options;
+        ProgramOptionsWebcam program_options;
 
         po::options_description description
             ("Project for demoing the Affdex SDK Detector class (grabbing and processing frames from the camera).");

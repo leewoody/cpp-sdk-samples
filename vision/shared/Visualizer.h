@@ -43,7 +43,7 @@ public:
     //DrawFaceMetrics Displays all facial metrics and associated value
     void drawFaceMetrics(affdex::vision::Face face,
                          std::vector<affdex::vision::Point> bounding_box,
-                         bool draw_face_id = false);
+                         bool draw_face_id = false, bool draw_drowsiness = false);
 
     // Draw body related metrics
     void drawBodyMetrics(std::map<affdex::vision::BodyPoint, affdex::vision::Point>& body_points);
@@ -68,6 +68,7 @@ public:
     std::map<affdex::vision::AgeCategory, std::string> AGE_CATEGORIES;
     std::vector<ColorEdges> COLOR_EDGES_PAIR; //contains body points with its respective color
     std::map<affdex::vision::GazeRegion, std::string> GAZE_REGIONS; //Region of gaze, from the person’s perspective -- e.g. LEFT means the person is looking to THEIR left”
+    std::map<affdex::vision::Drowsiness, std::string> DROWSINESS_LEVELS; //Drowsiness level with its respective string
 
 private:
 

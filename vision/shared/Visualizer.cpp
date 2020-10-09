@@ -1,7 +1,6 @@
 #include "Visualizer.h"
 #include "AffectivaLogo.h"
 #include "PlottingObjectListener.h"
-#include "PlottingBodyListener.h"
 
 #include <opencv2/highgui/highgui.hpp>
 #include <iomanip>
@@ -107,13 +106,22 @@ Visualizer::Visualizer() :
         {GazeRegion::FORWARD_DOWN, "FORWARD_DOWN"},
         {GazeRegion::DOWN, "DOWN"}
     };
+
+    DROWSINESS_LEVELS = {
+        {Drowsiness::UNKNOWN, "UNKNOWN"},
+        {Drowsiness::AWAKE, "AWAKE"},
+        {Drowsiness::MODERATE, "MODERATE"},
+        {Drowsiness::SEVERE, "SEVERE"},
+        {Drowsiness::ASLEEP, "ASLEEP"}
+    };
+
 }
 
-void Visualizer::drawFaceMetrics(affdex::vision::Face face, std::vector<Point> bounding_box, bool draw_face_id) {
+void Visualizer::drawFaceMetrics(affdex::vision::Face face, std::vector<Point> bounding_box, bool draw_face_id, bool show_drowsiness) {
     //Draw Right side metrics
     int padding = bounding_box[0].y; //Top left Y
 
-    auto expressions = face.getExpressions();
+    const auto expressions = face.getExpressions();
     for (auto& exp : EXPRESSIONS) {
         // special case: display blink rate as number instead of bar
         if (exp.first == Expression::BLINK_RATE) {
@@ -148,7 +156,7 @@ void Visualizer::drawFaceMetrics(affdex::vision::Face face, std::vector<Point> b
     }
 
     //Draw Left side metrics
-    auto emotions = face.getEmotions();
+    const auto emotions = face.getEmotions();
     for (auto& emo : EMOTIONS) {
         drawClassifierOutput(emo.second,
                              emotions.at(emo.first),
@@ -157,7 +165,7 @@ void Visualizer::drawFaceMetrics(affdex::vision::Face face, std::vector<Point> b
     }
 
     //Draw identity
-    auto identity = face.getIdentityMetric();
+    const auto identity = face.getIdentityMetric();
     std::string id_content;
     identity.id == -1 ? id_content = "UNKNOWN" : id_content = std::to_string(identity.id);
     drawText("identity", id_content, cv::Point(bounding_box[0].x, padding += spacing), true);
@@ -167,7 +175,7 @@ void Visualizer::drawFaceMetrics(affdex::vision::Face face, std::vector<Point> b
                          true);
 
     //Draw age
-    auto age = face.getAgeMetric();
+    const auto age = face.getAgeMetric();
     std::string age_content;
     age.years == -1 ? age_content = "UNKNOWN" : age_content = std::to_string(age.years);
     drawText("age", age_content, cv::Point(bounding_box[0].x, padding += spacing), true);
@@ -175,17 +183,26 @@ void Visualizer::drawFaceMetrics(affdex::vision::Face face, std::vector<Point> b
 
     //Draw age category
     const auto age_category = face.getAgeCategory();
-    drawText("age_category", AGE_CATEGORIES.at(age_category), cv::Point(bounding_box[0].x, padding += spacing),
+    drawText("age_category", AGE_CATEGORIES[age_category], cv::Point(bounding_box[0].x, padding += spacing),
              true);
 
     //Draw gaze
-    auto gaze = face.getGazeMetric();
+    const auto gaze = face.getGazeMetric();
 
     drawText("gaze_region", GAZE_REGIONS[gaze.gazeRegion], cv::Point(bounding_box[0].x, padding += spacing), true);
     drawClassifierOutput("gaze_confidence", gaze.confidence, cv::Point(bounding_box[0].x, padding += spacing), true);
 
     //Draw glasses confidence
     drawClassifierOutput("glasses", face.getGlasses(), cv::Point(bounding_box[0].x, padding += spacing), true);
+
+    if(show_drowsiness) {
+        // draw drowsiness metric
+        const auto drowsiness_metric = face.getDrowsinessMetric();
+        drawText("drowsiness_level", DROWSINESS_LEVELS[drowsiness_metric.drowsiness], cv::Point(bounding_box[0].x,
+                                                                                                padding += spacing), true);
+        drawText("drowsiness_confidence", std::to_string(drowsiness_metric.confidence), cv::Point(bounding_box[0].x,
+                                                                                                  padding += spacing), true);
+    }
 }
 
 void Visualizer::updateImage(const cv::Mat& output_img) {

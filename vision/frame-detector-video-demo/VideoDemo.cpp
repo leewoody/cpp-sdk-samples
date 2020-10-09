@@ -24,30 +24,7 @@ using namespace std;
 using namespace affdex;
 namespace po = boost::program_options; // abbreviate namespace
 
-
-struct ProgramOptions {
-    enum DetectionType {
-        FACE,
-        OBJECT,
-        OCCUPANT,
-        BODY
-    };
-    // cmd line args
-    affdex::Path data_dir;
-    affdex::Path input_video_path;
-    affdex::Path output_video_path;
-    unsigned int sampling_frame_rate;
-    bool draw_display;
-    unsigned int num_faces;
-    bool loop = false;
-    bool draw_id = false;
-    bool disable_logging = false;
-    bool write_video = false;
-    cv::VideoWriter output_video;
-    DetectionType detection_type = FACE;
-};
-
-void assembleProgramOptions(po::options_description& description, ProgramOptions& program_options) {
+void assembleProgramOptions(po::options_description& description, ProgramOptionsVideo& program_options) {
 
     description.add_options()
         ("help,h", po::bool_switch()->default_value(false), "Display this help message.")
@@ -79,11 +56,13 @@ void assembleProgramOptions(po::options_description& description, ProgramOptions
          "Disable logging to console")
         ("object", "Enable object detection")
         ("occupant", "Enable occupant detection, also enables body and face detection")
-        ("body", "Enable body detection");
+        ("body", "Enable body detection")
+        ("drowsiness", "Enable drowsiness detection, will be used only if no other detection types are enabled");
+
 }
 
 void processObjectVideo(vision::SyncFrameDetector& detector, std::ofstream& csv_file_stream,
-                        ProgramOptions& program_options) {
+                        ProgramOptionsVideo& program_options) {
 
     // configure the Detector by enabling features
     detector.enable({vision::Feature::CHILD_SEATS, vision::Feature::PHONES});
@@ -136,7 +115,7 @@ void processObjectVideo(vision::SyncFrameDetector& detector, std::ofstream& csv_
 }
 
 void processOccupantVideo(vision::SyncFrameDetector& detector, std::ofstream& csv_file_stream,
-                          ProgramOptions& program_options) {
+                          ProgramOptionsVideo& program_options) {
 
     // configure the Detector by enabling features
     detector.enable(vision::Feature::FACES);
@@ -186,7 +165,7 @@ void processOccupantVideo(vision::SyncFrameDetector& detector, std::ofstream& cs
 }
 
 void processBodyVideo(vision::SyncFrameDetector& detector, std::ofstream& csv_file_stream,
-                      ProgramOptions& program_options) {
+                      ProgramOptionsVideo& program_options) {
 
     // configure the Detector by enabling features
     detector.enable(vision::Feature::BODIES);
@@ -234,14 +213,18 @@ void processBodyVideo(vision::SyncFrameDetector& detector, std::ofstream& csv_fi
 
 void processFaceVideo(vision::SyncFrameDetector& detector,
                       std::ofstream& csv_file_stream,
-                      ProgramOptions& program_options) {
+                      ProgramOptionsVideo& program_options) {
     // configure the Detector by enabling features
     detector.enable({vision::Feature::EMOTIONS, vision::Feature::EXPRESSIONS, vision::Feature::IDENTITY,
                      vision::Feature::APPEARANCES, vision::Feature::GAZE});
 
+    if(program_options.show_drowsiness) {
+        detector.enable( vision::Feature::DROWSINESS);
+    }
+
     // prepare listeners
-    PlottingImageListener image_listener(csv_file_stream, program_options.draw_display,
-                                         !program_options.disable_logging, program_options.draw_id);
+    PlottingImageListener image_listener(csv_file_stream, program_options);
+
     StatusListener status_listener;
 
     // configure the Detector by assigning listeners
@@ -282,7 +265,7 @@ void processFaceVideo(vision::SyncFrameDetector& detector,
 
 bool verifyTypeOfProcess(const po::variables_map& args,
                          std::string& detection_type_str,
-                         ProgramOptions& program_options) {
+                         ProgramOptionsVideo& program_options) {
 
     //Check for object or occupant or body argument present or not. If nothing is present then enable face by default.
     const bool is_occupant = args.count("occupant");
@@ -310,6 +293,11 @@ bool verifyTypeOfProcess(const po::variables_map& args,
     }
     else {
         detection_type_str = "_faces";
+        //check for drowsiness only when faces are enabled
+        program_options.show_drowsiness = args.count("drowsiness");
+        //append _drowsiness to csv file
+        if(program_options.show_drowsiness)
+            detection_type_str += "_drowsiness";
         std::cout << "Setting up face detection\n";
     }
     return true;
@@ -323,7 +311,7 @@ int main(int argsc, char** argsv) {
     std::cout << std::fixed << std::setprecision(precision);
 
     //Gathering program options
-    ProgramOptions program_options;
+    ProgramOptionsVideo program_options;
     po::options_description
         description("Project for demoing the Affectiva Detector class (processing video files).");
     assembleProgramOptions(description, program_options);

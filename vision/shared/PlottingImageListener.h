@@ -3,15 +3,29 @@
 #include "ImageListener.h"
 #include "PlottingListener.h"
 
+#include "ProgramOptions.h"
+
 using namespace affdex;
 
 class PlottingImageListener : public vision::ImageListener, public PlottingListener<vision::Face> {
 
 public:
 
-    PlottingImageListener(std::ofstream& csv, bool draw_display, bool enable_logging, bool draw_face_id) :
-        PlottingListener(csv, draw_display, enable_logging), capture_last_ts_(0), process_fps_(0), capture_fps_(0),
-        draw_face_id_(draw_face_id), frames_with_faces_(0) {
+    PlottingImageListener(std::ofstream& csv, ProgramOptionsWebcam& program_options ) :
+        PlottingListener(csv, program_options.draw_display, !program_options.disable_logging), capture_last_ts_(0),
+        process_fps_(0), capture_fps_(0), draw_face_id_(program_options.draw_id), frames_with_faces_(0),
+        show_drowsiness_(program_options.show_drowsiness) {
+        setCSVHeaders();
+    }
+
+    PlottingImageListener(std::ofstream& csv, ProgramOptionsVideo& program_options ) :
+        PlottingListener(csv, program_options.draw_display, !program_options.disable_logging), capture_last_ts_(0),
+        process_fps_(0), capture_fps_(0), draw_face_id_(program_options.draw_id), frames_with_faces_(0),
+        show_drowsiness_(program_options.show_drowsiness) {
+        setCSVHeaders();
+    }
+
+    void setCSVHeaders() {
         out_stream_ << "TimeStamp,faceId,upperLeftX,upperLeftY,lowerRightX,lowerRightY,confidence,interocularDistance,";
         for (const auto& angle : viz_.HEAD_ANGLES) {
             out_stream_ << angle.second << ",";
@@ -24,6 +38,10 @@ public:
         }
         out_stream_ << "mood,dominantEmotion,dominantEmotionConfidence,gazeRegion, gazeConfidence,";
         out_stream_ << "identity,identityConfidence,age,ageConfidence,ageCategory,glasses";
+
+        if(show_drowsiness_) {
+            out_stream_ << ",drowsinessLevel,drowsinessConfidence";
+        }
 
         out_stream_ << std::endl;
         out_stream_.precision(2);
@@ -75,6 +93,9 @@ public:
             }
             // mood,dominantEmotion,dominantEmotionConfidence,gazeRegion, gazeConfidence,identity,identityConfidence,age,ageConfidence,ageCategory,glasses
             out_stream_<< "nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan";
+            if(show_drowsiness_) {
+                out_stream_ << ",nan,nan";
+            }
             out_stream_ << std::endl;
         }
 
@@ -130,6 +151,12 @@ public:
 
             out_stream_ << "," << f.getGlasses();
 
+            if(show_drowsiness_) {
+                const auto drowsiness_metric = f.getDrowsinessMetric();
+                out_stream_ << "," << viz_.DROWSINESS_LEVELS[drowsiness_metric.drowsiness]
+                            << "," << drowsiness_metric.confidence;
+            }
+
             out_stream_ << std::endl;
         }
     }
@@ -152,7 +179,7 @@ public:
             viz_.drawPoints(f.getFacePoints());
 
             // Draw a face on screen
-            viz_.drawFaceMetrics(f, bbox, draw_face_id_);
+            viz_.drawFaceMetrics(f, bbox, draw_face_id_, show_drowsiness_);
         }
 
         viz_.showImage();
@@ -190,4 +217,5 @@ private:
     int capture_fps_;
     bool draw_face_id_;
     int frames_with_faces_;
+    bool show_drowsiness_;
 };
