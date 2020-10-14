@@ -39,27 +39,28 @@ uint64_t VideoReader::TotalFrames() const {
 
 bool VideoReader::GetFrame(cv::Mat& bgr_frame, affdex::Timestamp& timestamp_ms) {
     bool frame_data_loaded;
-
+    affdex::timestamp last_timestamp_ms;
     do {
+        last_timestamp_ms = last_timestamp_ms_;
         frame_data_loaded = GetFrameData(bgr_frame, timestamp_ms);
         if (frame_data_loaded) {
             current_frame_++;
         }
-    } while ((sampling_frame_rate_ > 0) && (timestamp_ms > 0) &&
-        ((timestamp_ms - last_timestamp_ms_) < 1000 / sampling_frame_rate_) && frame_data_loaded);
+    } while ((sampling_frame_rate_ > 0) && (timestamp_ms >= 0) &&
+        ((timestamp_ms - last_timestamp_ms) < 1000 / sampling_frame_rate_) && frame_data_loaded);
 
-    last_timestamp_ms_ = timestamp_ms;
     frame_progress_->progressed(current_frame_);
     return frame_data_loaded;
 }
 
+
 bool VideoReader::GetFrameData(cv::Mat& bgr_frame, affdex::Timestamp& timestamp_ms) {
     static const int MAX_ATTEMPTS = 2;
-    affdex::Timestamp prev_timestamp_ms = cap_.get(::CV_CAP_PROP_POS_MSEC);
+    timestamp_ms = cap_.get(::CV_CAP_PROP_POS_MSEC);
     bool frame_found = cap_.grab();
     bool frame_retrieved = cap_.retrieve(bgr_frame);
-    timestamp_ms = cap_.get(::CV_CAP_PROP_POS_MSEC);
 
+    // TODO: to verify the below comments are still valid
     // Two conditions result in failure to decode (grab/retrieve) a video frame (timestamp reports 0):
     // (1) error on a particular frame
     // (2) end of the video file
@@ -77,8 +78,11 @@ bool VideoReader::GetFrameData(cv::Mat& bgr_frame, affdex::Timestamp& timestamp_
     }
 
     if (frame_found && frame_retrieved && n_attempts > 0) {
-        if (timestamp_ms <= prev_timestamp_ms) {
+        if (timestamp_ms <= last_timestamp_ms_) {
             frame_found = false;
+        }
+        else {
+            last_timestamp_ms_ = timestamp_ms;
         }
     }
 
@@ -111,8 +115,7 @@ void VideoReader::SniffResolution(const boost::filesystem::path& path,
         throw "Unable to estimate fps from input video: " + path.string();
     }
 
-    // Divide time by (N_frames - 1) since we're after duration that the frames were on screen
-    //below code is to fix the rounding issue
-    double temp = ((timestamps.size() - 1) * 1000.0) / ((timestamps[timestamps.size() - 1]) - timestamps[0]);
-    fps = (int)std::round((temp < 0 ? temp - 0.5 : temp + 0.5));
+
+    auto last_frame_idx = timestamps.size() - 1;
+    fps = (last_frame_idx * 1000.0) / ((timestamps[last_frame_idx]) - timestamps[0]);
 }

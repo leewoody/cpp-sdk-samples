@@ -20,7 +20,7 @@ public:
 
 private:
     cv::VideoCapture cap_;
-    affdex::Timestamp last_timestamp_ms_ = 0;
+    affdex::Timestamp last_timestamp_ms_ = -1;
     const int sampling_frame_rate_;
 
     uint64_t total_frames_ = 0;
