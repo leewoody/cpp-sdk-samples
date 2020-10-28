@@ -16,7 +16,7 @@ The Affectiva ICS SDK is available upon request. To get access, please [contact 
 
 
 #### Linux (x86_64, aarch64)
-Branches like this one that have a name that ends in "qc", are Android-specific (ARM64). For samples that work on Linux, switch to the branch whose name that matches the release you're using.
+Branches like this one that have a name that includes "qc", are Android-specific (ARM64). For samples that work on Linux, switch to the branch whose name that matches the release you're using.
 ##Instructions
 
 ### To install, build and run docker 
