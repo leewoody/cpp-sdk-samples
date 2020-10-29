@@ -79,18 +79,18 @@ public:
 
         for (const auto& id_obj_pair : objects) {
             const Object obj = id_obj_pair.second;
-            std::vector<Point> bbox({obj.boundingBox.getTopLeft(), obj.boundingBox.getBottomRight()});
+            std::vector<Point> bbox({obj.getBoundingBox().getTopLeft(), obj.getBoundingBox().getBottomRight()});
 
             out_stream_ << time_stamp << ","
                         << id_obj_pair.first << ","
-                        << obj.confidence << ","
+                        << obj.getConfidence() << ","
                         << std::setprecision(0) << bbox[0].x << "," << bbox[0].y << "," << bbox[1].x << "," << bbox[1].y
                         << "," << std::setprecision(4)
-                        << typeToString(obj.type);
+                        << typeToString(obj.getType());
 
             for (const auto& cr :cabin_regions_) {
                 bool found = false;
-                for (const auto& o : obj.matchedRegions) {
+                for (const auto& o : obj.getMatchedRegions()) {
                     if (cr.id == o.cabinRegion.id) {
                         out_stream_ << "," << o.matchConfidence;
                         found = true;
@@ -113,7 +113,7 @@ public:
             const auto obj = id_object_pair.second;
             viz_.drawObjectMetrics(obj);
             //add object region detected
-            for(const auto& o : obj.matchedRegions){
+            for(const auto& o : obj.getMatchedRegions()){
                 const auto id = o.cabinRegion.id;
                 if(std::find(object_regions_.begin(), object_regions_.end(), id) == object_regions_.end()) {
                     object_regions_.emplace_back(id);
@@ -121,8 +121,8 @@ public:
             }
 
             //add object type detected
-            if(std::find(object_types_.begin(), object_types_.end(), obj.type) == object_types_.end()) {
-                object_types_.emplace_back(obj.type);
+            if(std::find(object_types_.begin(), object_types_.end(), obj.getType()) == object_types_.end()) {
+                object_types_.emplace_back(obj.getType());
             }
         }
 

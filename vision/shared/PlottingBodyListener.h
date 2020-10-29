@@ -94,7 +94,7 @@ public:
         }
 
         for (const auto& body_id_pair : bodies) {
-            std::map<BodyPoint, Point> body_point_pt = body_id_pair.second.body_points;
+            std::map<BodyPoint, Point> body_point_pt = body_id_pair.second.getBodyPoints();
 
             out_stream_ << time_stamp << ","
                         << body_id_pair.first << std::setprecision(0);
@@ -116,7 +116,7 @@ public:
         viz_.updateImage(img);
 
         for (const auto& id_body_pair : bodies) {
-            auto body_points = id_body_pair.second.body_points;
+            auto body_points = id_body_pair.second.getBodyPoints();
             viz_.drawBodyMetrics(body_points);
         }
 
